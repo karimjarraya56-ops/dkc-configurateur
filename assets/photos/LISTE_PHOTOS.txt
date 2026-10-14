@@ -1,0 +1,79 @@
+PHOTOS A DEPOSER DANS : assets/photos/
+Format : .jpg, .png ou .webp  (fond blanc ideal, carre ~800x800)
+
+== Élément rectiligne ==
+  element_rectiligne_chemin_de_cables.jpg                        <- Élément rectiligne (chemin de câbles)
+  kit_pieces_detachees_couvercle_a_charnieres.jpg                <- Kit pièces détachées (couvercle à charnières)
+
+== Couvercle ==
+  couvercle_pour_element_rectiligne.jpg                          <- Couvercle pour élément rectiligne
+  plaque_de_blocage_du_couvercle.jpg                             <- Plaque de blocage du couvercle
+
+== Accessoire ==
+  courbe_plate_a_45.jpg                                          <- Courbe plate à 45°
+  couvercle_courbe_plate_a_45.jpg                                <- Couvercle – Courbe plate à 45°
+  courbe_plate_a_90.jpg                                          <- Courbe plate à 90°
+  couvercle_courbe_plate_a_90.jpg                                <- Couvercle – Courbe plate à 90°
+  derivation_plate_en_t.jpg                                      <- Dérivation plate en «T»
+  couvercle_derivation_plate_en_t.jpg                            <- Couvercle – Dérivation plate en «T»
+  derivation_laterale.jpg                                        <- Dérivation latérale
+  couvercle_derivation_laterale.jpg                              <- Couvercle – Dérivation latérale
+  derivation_plate_a_croisement.jpg                              <- Dérivation plate à croisement
+  couvercle_derivation_plate_a_croisement.jpg                    <- Couvercle – Dérivation plate à croisement
+  raccord_de_reduction_centrale.jpg                              <- Raccord de réduction centrale
+  couvercle_raccord_de_reduction_centrale.jpg                    <- Couvercle – Raccord de réduction centrale
+  raccord_de_reduction_droite.jpg                                <- Raccord de réduction droite
+  couvercle_raccord_de_reduction_droite.jpg                      <- Couvercle – Raccord de réduction droite
+  raccord_de_reduction_gauche.jpg                                <- Raccord de réduction gauche
+  couvercle_raccord_de_reduction_gauche.jpg                      <- Couvercle – Raccord de réduction gauche
+  element_de_reduction.jpg                                       <- Élément de réduction
+  courbe_en_montee_a_45.jpg                                      <- Courbe en montée à 45°
+  couvercle_courbe_en_montee_a_45.jpg                            <- Couvercle – Courbe en montée à 45°
+  courbe_en_montee_a_90.jpg                                      <- Courbe en montée à 90°
+  couvercle_courbe_en_montee_a_90.jpg                            <- Couvercle – Courbe en montée à 90°
+  courbe_en_descente_a_45.jpg                                    <- Courbe en descente à 45°
+  couvercle_courbe_en_descente_a_45.jpg                          <- Couvercle – Courbe en descente à 45°
+  courbe_en_descente_a_90.jpg                                    <- Courbe en descente à 90°
+  couvercle_courbe_en_descente_a_90.jpg                          <- Couvercle – Courbe en descente à 90°
+  courbe_en_descente_a_90_ligne_oblique_droite.jpg               <- Courbe en descente à 90° ligne oblique droite
+  courbe_en_descente_a_90_ligne_oblique_gauche.jpg               <- Courbe en descente à 90° ligne oblique gauche
+  courbe_en_montee_a_90_ligne_oblique_droite.jpg                 <- Courbe en montée à 90° ligne oblique droite
+  courbe_en_montee_a_90_ligne_oblique_gauche.jpg                 <- Courbe en montée à 90° ligne oblique gauche
+  t_en_descente.jpg                                              <- «T» en descente
+  t_en_montee.jpg                                                <- «T» en montée
+  t_en_descente_oblique.jpg                                      <- «T» en descente oblique
+  t_en_montee_oblique.jpg                                        <- «T» en montée oblique
+  t_en_montee_du_couvercle.jpg                                   <- «T» en montée du couvercle
+  t_en_montee_oblique_du_couvercle.jpg                           <- «T» en montée oblique du couvercle
+  courbe_en_descente_a_90_avec_inversion_de_plan.jpg             <- Courbe en descente à 90° avec inversion de plan
+  separateur.jpg                                                 <- Séparateur
+  etrier_d_espacement.jpg                                        <- Étrier d'espacement
+  kit_de_protection_ip_44_bande_ip_44.jpg                        <- Kit de protection IP 44 – bande IP 44
+  plaque_de_fixation_du_cable.jpg                                <- Plaque de fixation du câble
+  joint_auto_adhesif_kit_ip_44.jpg                               <- Joint auto-adhésif (kit IP 44)
+
+== Jonction ==
+  tete_de_fermeture.jpg                                          <- Tête de fermeture
+  bride_de_raccord.jpg                                           <- Bride de raccord
+  joint_lineaire.jpg                                             <- Joint linéaire
+  joint_articule_vertical.jpg                                    <- Joint articulé vertical
+  joint_articule_horizontal.jpg                                  <- Joint articulé horizontal
+  couvre_joint_pour_couvercle.jpg                                <- Couvre-joint pour couvercle
+  couvre_joint_pour_base.jpg                                     <- Couvre-joint pour base
+
+== Mise à la terre ==
+  platine_de_terre_pour_connexions_equipotentielles.jpg          <- Platine de terre pour connexions équipotentielles
+
+== Retouche ==
+  peinture_pour_retouches_0_40_l.jpg                             <- Peinture pour retouches (0,40 L)
+  peinture_au_zinc_spray_0_40_l.jpg                              <- Peinture au zinc – spray (0,40 L)
+
+== Visserie ==
+  vis_m6_x_10_jonction_mecanique_cadre_sous_tete.jpg             <- Vis M6 x 10 – jonction mécanique (cadre sous-tête)
+  vis_m6_x_08_jonction_electrique_des_bases.jpg                  <- Vis M6 x 08 – jonction électrique des bases
+  vis_m5_x_05_jonction_electrique_des_couvercles.jpg             <- Vis M5 x 05 – jonction électrique des couvercles
+  vis_et_ecrou_m6_x_15_galvanises_a_chaud.jpg                    <- Vis et écrou M6 x 15 galvanisés à chaud
+  ecrou_m6_anti_desserrage.jpg                                   <- Écrou M6 anti-desserrage
+  ecrou_m8_anti_desserrage.jpg                                   <- Écrou M8 anti-desserrage
+  ecrou_m5.jpg                                                   <- Écrou M5
+  rondelle_plate_pour_vis_m6.jpg                                 <- Rondelle plate pour vis M6
