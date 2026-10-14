@@ -6,8 +6,5 @@ secondaryBackgroundColor = "#FFFFFF"
 textColor = "#1C1F24"
 font = "sans serif"
 
-[server]
-port = 8503
-
 [client]
 toolbarMode = "minimal"
