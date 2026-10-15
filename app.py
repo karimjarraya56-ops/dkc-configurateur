@@ -191,6 +191,20 @@ st.markdown(
     .st-key-langue button:nth-of-type(3)::before {background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3CclipPath id='t'%3E%3Cpath d='M30 15h30v15zv15H0zH0V0zV0h30z'/%3E%3C/clipPath%3E%3Cpath fill='%23012169' d='M0 0v30h60V0z'/%3E%3Cpath stroke='%23fff' stroke-width='6' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23C8102E' stroke-width='4' clip-path='url(%23t)' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23fff' stroke-width='10' d='M30 0v30M0 15h60'/%3E%3Cpath stroke='%23C8102E' stroke-width='6' d='M30 0v30M0 15h60'/%3E%3C/svg%3E");}
     [class*="st-key-acc_"] .stButton button {padding: 0.25rem 0.6rem; min-height: 0; font-size: 0.8rem; border-radius: 9px;}
     .dans-liste {font-size: 0.75rem; color: #15803D; font-weight: 600;}
+    .st-key-liste_table {background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 0.3rem 0.9rem 0.4rem;
+      gap: 0; margin-bottom: 0.8rem;}
+    .lt-entete {font-size: 0.75rem; color: var(--muted); font-weight: 600; padding: 0.35rem 0;}
+    [class*="st-key-lt_ligne_"] {border-top: 1px solid var(--line); padding: 0.4rem 0;}
+    .lt-photo {height: 52px; display: flex; align-items: center; justify-content: center; background: #fff;}
+    .lt-photo img {max-width: 100%; max-height: 100%; object-fit: contain;}
+    .lt-photo.vide {background: var(--bg); border-radius: 8px;}
+    .lt-code {font-weight: 800; color: var(--dkc); letter-spacing: 1px;}
+    .lt-nom {font-weight: 600; font-size: 0.88rem; color: var(--ink); line-height: 1.3;}
+    .lt-det {font-size: 0.78rem; color: var(--muted);}
+    .st-key-liste_table [data-testid="stNumberInputContainer"] {border: 1.5px solid var(--line); border-radius: 9px;}
+    .st-key-liste_table [data-testid="stNumberInput"] input {font-weight: 700; text-align: center;}
+    [class*="st-key-lt_suppr_"] button {border: none; background: transparent; font-size: 1rem; padding: 0.2rem 0.4rem;}
+    [class*="st-key-lt_suppr_"] button:hover {background: var(--dkc-soft);}
     [class*="st-key-ajout_"] {gap: 0.4rem;}
     [class*="st-key-ajout_"] [data-testid="stNumberInput"] label p {font-size: 0.7rem; color: var(--muted);}
     [class*="st-key-ajout_"] [data-testid="stNumberInput"] input {font-weight: 700; text-align: center; padding-left: 0.4rem;}
@@ -758,7 +772,7 @@ def boutons_ajout(ligne, photos, couvercle, photos_couvercle, chemin=False):
     genre = "ch" if chemin else "acc"
     cle_qte = f"qte_{genre}_{cles[0]}"
     with st.container(key=f"ajout_{genre}_{cles[0]}"):
-        c_q, c_b = st.columns([1, 2.1], gap="small", vertical_alignment="bottom")
+        c_q, c_b = st.columns([1.25, 1.6], gap="small", vertical_alignment="bottom")
         with c_q:
             st.number_input(t("col_quantite"), min_value=1, max_value=9999, step=1, value=1, key=cle_qte)
         with c_b:
@@ -788,18 +802,17 @@ def dimensions(l):
     return " × ".join(f"{k} {fmt('H_mm', v)}" for k, v in l["dims"].items()) or "—"
 
 
-def maj_liste(ver):
-    """Applique les quantités modifiées dans le tableau, puis recrée le tableau."""
-    etat = st.session_state.get(f"ed_{ver}", {})
-    codes = list(panier())
-    for idx, changes in etat.get("edited_rows", {}).items():
-        if "quantite" in changes and idx < len(codes):
-            q = int(changes["quantite"] or 0)
-            if q <= 0:
-                panier().pop(codes[idx], None)
-            else:
-                panier()[codes[idx]]["qte"] = q
-    st.session_state["ed_ver"] = ver + 1
+def maj_qte(code, cle):
+    """Nouvelle quantité saisie dans la liste (0 = retirer l'article)."""
+    q = int(st.session_state.get(cle) or 0)
+    if q <= 0:
+        panier().pop(code, None)
+    elif code in panier():
+        panier()[code]["qte"] = q
+
+
+def retirer(code):
+    panier().pop(code, None)
 
 
 def vider():
@@ -817,22 +830,29 @@ def bloc_liste(num):
     lignes = [{"photo": photo_src(l["photos"]), "code": c, "designation": designation(l),
                "finition": fmt("Finition", l["finition"]), "dimensions": dimensions(l),
                "quantite": l["qte"], "unite": unite(l["unite"]), "page": l["page"]} for c, l in p.items()]
-    ver = st.session_state.setdefault("ed_ver", 0)
     st.caption(t("info_liste"))
-    st.data_editor(
-        pd.DataFrame(lignes), key=f"ed_{ver}", on_change=maj_liste, args=(ver,), hide_index=True,
-        width="stretch", row_height=64,
-        disabled=["photo", "code", "designation", "finition", "dimensions", "unite", "page"],
-        column_config={
-            "photo": st.column_config.ImageColumn(t("col_photo"), width="small"),
-            "code": st.column_config.TextColumn(t("col_code"), width="small"),
-            "designation": st.column_config.TextColumn(t("col_designation"), width="large"),
-            "finition": st.column_config.TextColumn(t("col_finition")),
-            "dimensions": st.column_config.TextColumn(t("col_dimensions")),
-            "quantite": st.column_config.NumberColumn(t("col_quantite"), min_value=0, step=1, width="small"),
-            "unite": st.column_config.TextColumn(t("col_unite"), width="small"),
-            "page": st.column_config.TextColumn(t("col_page"), width="small"),
-        })
+    largeurs = [0.9, 1, 3.3, 1.5, 0.75, 0.55, 0.45]
+    with st.container(key="liste_table"):
+        entete = st.columns(largeurs, gap="small")
+        for col, cle in zip(entete, ("col_photo", "col_code", "col_designation", "col_quantite", "col_unite", "col_page")):
+            col.markdown(f'<div class="lt-entete">{t(cle)}</div>', unsafe_allow_html=True)
+        for lg in lignes:
+            code = lg["code"]
+            cle = f"liste_q_{code}"
+            st.session_state[cle] = lg["quantite"]  # suit les ajouts faits ailleurs dans la page
+            with st.container(key=f"lt_ligne_{code}"):
+                c = st.columns(largeurs, gap="small", vertical_alignment="center")
+                c[0].markdown(img_html(lg["photo"], "lt-photo", ""), unsafe_allow_html=True)
+                c[1].markdown(f'<div class="lt-code">{code}</div>', unsafe_allow_html=True)
+                c[2].markdown(f'<div class="lt-nom">{lg["designation"]}</div>'
+                              f'<div class="lt-det">{lg["finition"]} · {lg["dimensions"]}</div>', unsafe_allow_html=True)
+                with c[3]:
+                    st.number_input(t("col_quantite"), min_value=0, max_value=99999, step=1, key=cle,
+                                    label_visibility="collapsed", on_change=maj_qte, args=(code, cle))
+                c[4].markdown(f'<div class="lt-det">{lg["unite"]}</div>', unsafe_allow_html=True)
+                c[5].markdown(f'<div class="lt-det">{lg["page"]}</div>', unsafe_allow_html=True)
+                with c[6]:
+                    st.button("🗑", key=f"lt_suppr_{code}", on_click=retirer, args=(code,), help=t("retirer"))
     export = [{**lg, "photo": chemin_photo(l["photos"])} for lg, l in zip(lignes, p.values())]
     c1, c2, c3 = st.columns([1, 1, 1])
     with c1:
