@@ -111,7 +111,8 @@ TEXTES = {
     "sans_charnieres": {"fr": "Sans charnières", "it": "Senza cerniere", "en": "Without hinges"},
     # Liste de matériel
     "ajouter": {"fr": "＋ Ajouter à ma liste", "it": "＋ Aggiungi alla lista", "en": "＋ Add to my list"},
-    "ajouter_couvercle": {"fr": "＋ Couvercle", "it": "＋ Coperchio", "en": "＋ Cover"},
+    "ajouter_couvercle": {"fr": "＋ Ajouter aussi le couvercle", "it": "＋ Aggiungi anche il coperchio",
+                          "en": "＋ Also add the cover"},
     "ajouter_chemin": {"fr": "＋ Ajouter ce chemin à ma liste", "it": "＋ Aggiungi questo canale alla lista",
                        "en": "＋ Add this tray to my list"},
     "ajouter_couvercle_chemin": {"fr": "＋ Couvercle assorti", "it": "＋ Coperchio abbinato", "en": "＋ Matching cover"},

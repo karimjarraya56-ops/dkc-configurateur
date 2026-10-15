@@ -191,6 +191,13 @@ st.markdown(
     .st-key-langue button:nth-of-type(3)::before {background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3CclipPath id='t'%3E%3Cpath d='M30 15h30v15zv15H0zH0V0zV0h30z'/%3E%3C/clipPath%3E%3Cpath fill='%23012169' d='M0 0v30h60V0z'/%3E%3Cpath stroke='%23fff' stroke-width='6' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23C8102E' stroke-width='4' clip-path='url(%23t)' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23fff' stroke-width='10' d='M30 0v30M0 15h60'/%3E%3Cpath stroke='%23C8102E' stroke-width='6' d='M30 0v30M0 15h60'/%3E%3C/svg%3E");}
     [class*="st-key-acc_"] .stButton button {padding: 0.25rem 0.6rem; min-height: 0; font-size: 0.8rem; border-radius: 9px;}
     .dans-liste {font-size: 0.75rem; color: #15803D; font-weight: 600;}
+    [class*="st-key-ajout_"] {gap: 0.4rem;}
+    [class*="st-key-ajout_"] [data-testid="stNumberInput"] label p {font-size: 0.7rem; color: var(--muted);}
+    [class*="st-key-ajout_"] [data-testid="stNumberInput"] input {font-weight: 700; text-align: center; padding-left: 0.4rem;}
+    [class*="st-key-ajout_"] [data-testid="stNumberInput"] button {width: 26px;}
+    [class*="st-key-ajout_"] [data-testid="stNumberInputContainer"] {border: 1.5px solid var(--line); border-radius: 9px;
+      background: var(--bg);}
+    [class*="st-key-ajout_"] [data-testid="stNumberInputContainer"]:focus-within {border-color: var(--dkc);}
     .st-key-panneau .stButton button, .st-key-panneau2 .stButton button {border-radius: 10px;}
     .st-key-calcul {background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 1.1rem 1.2rem;}
     .resume {display: flex; align-items: center; gap: 0.8rem; background: #FFF1F2; border-left: 4px solid var(--dkc);
@@ -740,22 +747,27 @@ def ajouter(ligne, photos, qte=1):
     }
 
 
+def ajouter_qte(ligne, photos, cle):
+    ajouter(ligne, photos, int(st.session_state.get(cle) or 1))
+
+
 def boutons_ajout(ligne, photos, couvercle, photos_couvercle, chemin=False):
-    """Boutons « Ajouter à ma liste » (et « + couvercle ») sous une carte ou une fiche."""
+    """Quantité + « Ajouter à ma liste » (et « + couvercle », même quantité) sous une carte ou une fiche."""
     ligne = ligne.to_dict()
     cles = (ligne["Code"], couvercle["Code"] if couvercle is not None else "")
-    if couvercle is not None:
-        c1, c2 = st.columns([1.4, 1], gap="small")
-    else:
-        c1, c2 = st.container(), None
-    with c1:
-        st.button(t("ajouter_chemin" if chemin else "ajouter"), key=f"add_{'ch' if chemin else 'acc'}_{cles[0]}",
-                  on_click=ajouter, args=(ligne, photos), width="stretch", type="primary" if chemin else "secondary")
-    if c2 is not None:
-        with c2:
-            st.button(t("ajouter_couvercle_chemin" if chemin else "ajouter_couvercle"),
-                      key=f"addc_{'ch' if chemin else 'acc'}_{cles[1]}", on_click=ajouter,
-                      args=(couvercle.to_dict(), photos_couvercle), width="stretch")
+    genre = "ch" if chemin else "acc"
+    cle_qte = f"qte_{genre}_{cles[0]}"
+    with st.container(key=f"ajout_{genre}_{cles[0]}"):
+        c_q, c_b = st.columns([1, 2.1], gap="small", vertical_alignment="bottom")
+        with c_q:
+            st.number_input(t("col_quantite"), min_value=1, max_value=9999, step=1, value=1, key=cle_qte)
+        with c_b:
+            st.button(t("ajouter_chemin" if chemin else "ajouter"), key=f"add_{genre}_{cles[0]}",
+                      on_click=ajouter_qte, args=(ligne, photos, cle_qte), width="stretch",
+                      type="primary" if chemin else "secondary")
+        if couvercle is not None:
+            st.button(t("ajouter_couvercle_chemin" if chemin else "ajouter_couvercle"), key=f"addc_{genre}_{cles[1]}",
+                      on_click=ajouter_qte, args=(couvercle.to_dict(), photos_couvercle, cle_qte), width="stretch")
     deja = [panier()[c]["qte"] for c in cles if c in panier()]
     if deja:
         md(f'<div class="dans-liste">✓ {" + ".join(map(str, deja))} {t("dans_liste")}</div>')
