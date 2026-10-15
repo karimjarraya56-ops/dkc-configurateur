@@ -237,6 +237,8 @@ st.markdown(
       backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 16px; padding: 0.5rem 1rem;
       box-shadow: 0 6px 20px rgba(20,23,28,.06); margin-bottom: 0.9rem;}
     .logo-entete img {height: 30px; display: block;}
+    .logo-entete a {display: inline-block; cursor: pointer; transition: opacity .15s;}
+    .logo-entete a:hover {opacity: .8;}
     .st-key-modes [data-testid="stButtonGroup"] {justify-content: center;}
     .st-key-modes button {background: transparent !important; border: none !important; border-radius: 0 !important;
       border-bottom: 2.5px solid transparent !important; padding: 0.45rem 0.9rem !important; font-weight: 600 !important;
@@ -1096,7 +1098,7 @@ logo_b64 = base64.b64encode(LOGO.read_bytes()).decode()
 with st.container(key="entete"):
     c_logo, c_mode, c_liste, c_lang = st.columns([1, 2.7, 1, 1], vertical_alignment="center")
     with c_logo:
-        md(f'<div class="logo-entete"><img src="data:image/png;base64,{logo_b64}" alt="DKC"></div>')
+        md(f'<div class="logo-entete"><a href="./" target="_self" title="DKC"><img src="data:image/png;base64,{logo_b64}" alt="DKC"></a></div>')
     with c_mode, st.container(key="modes"):
         mode = st.segmented_control("Mode", ["config", "recherche"], default="config", key="mode",
                                     format_func=lambda m: t("mode_config" if m == "config" else "mode_recherche"),
