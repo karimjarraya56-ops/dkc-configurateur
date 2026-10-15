@@ -196,6 +196,16 @@ TEXTES = {
     "et_calcul": {"fr": "Calcul", "it": "Calcolo", "en": "Quantities"},
     "et_accessoires": {"fr": "Accessoires", "it": "Accessori", "en": "Fittings"},
     "et_liste": {"fr": "Liste", "it": "Lista", "en": "List"},
+    # Prix
+    "prix_unitaire": {"fr": "Prix unitaire HT", "it": "Prezzo unitario IVA escl.", "en": "Unit price (excl. VAT)"},
+    "col_prix": {"fr": "Prix u. HT", "it": "Prezzo un.", "en": "Unit price"},
+    "col_total": {"fr": "Total HT", "it": "Totale", "en": "Total"},
+    "total_ht": {"fr": "Total HT", "it": "Totale IVA esclusa", "en": "Total excl. VAT"},
+    "ht": {"fr": "HT", "it": "IVA escl.", "en": "excl. VAT"},
+    "prix_demande": {"fr": "sur demande", "it": "su richiesta", "en": "on request"},
+    "prix_note": {"fr": "Prix indicatifs en euros hors taxes, hors remise – à confirmer avec DKC.",
+                  "it": "Prezzi indicativi in euro IVA esclusa, senza sconto – da confermare con DKC.",
+                  "en": "Indicative prices in euros excluding VAT and discounts – to be confirmed with DKC."},
 }
 
 FINITIONS = {

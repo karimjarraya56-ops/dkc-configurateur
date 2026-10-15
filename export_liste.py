@@ -10,7 +10,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from PIL import Image
 
 ROUGE = "E30613"
-COLONNES = ["photo", "code", "designation", "finition", "dimensions", "quantite", "unite", "page"]
+COLONNES = ["photo", "code", "designation", "finition", "dimensions", "quantite", "unite", "prix", "total", "page"]
 
 # Polices Unicode disponibles selon le système (accents, «», ×, –)
 POLICES = [
@@ -33,13 +33,13 @@ def _vignette(chemin, hauteur_px):
     return buf, im.width, im.height
 
 
-def excel(lignes, t, titre, logo):
-    """lignes : dicts (photo, code, designation, finition, dimensions, quantite, unite, page)."""
+def excel(lignes, t, titre, logo, total_general=None):
+    """lignes : dicts (photo, code, designation, finition, dimensions, quantite, unite, prix, total, page)."""
     wb = Workbook()
     ws = wb.active
     ws.title = titre[:31]
     ws.sheet_view.showGridLines = False
-    largeurs = [12, 12, 52, 30, 26, 10, 8, 10]
+    largeurs = [12, 12, 48, 28, 24, 10, 8, 13, 14, 8]
     for i, l in enumerate(largeurs):
         ws.column_dimensions[chr(65 + i)].width = l
 
@@ -67,14 +67,17 @@ def excel(lignes, t, titre, logo):
         r = entete + 1 + n
         ws.row_dimensions[r].height = 48
         valeurs = ["", lg["code"], lg["designation"], lg["finition"], lg["dimensions"], lg["quantite"],
-                   lg["unite"], lg["page"]]
+                   lg["unite"], lg["prix"], lg["total"], lg["page"]]
         for i, v in enumerate(valeurs):
             c = ws.cell(row=r, column=i + 1, value=v)
             c.alignment = Alignment(vertical="center", wrap_text=True,
-                                    horizontal="center" if i in (1, 5, 6, 7) else "left")
+                                    horizontal="center" if i in (1, 5, 6, 9) else ("right" if i in (7, 8) else "left"))
+            if i in (7, 8):
+                c.number_format = '#,##0.00 "€"'
             c.border = Border(bottom=fin_ligne)
         ws.cell(row=r, column=2).font = Font(bold=True, color=ROUGE)
         ws.cell(row=r, column=6).font = Font(bold=True)
+        ws.cell(row=r, column=9).font = Font(bold=True)
         v = _vignette(lg.get("photo"), 56)
         if v:
             img = XLImage(v[0])
@@ -83,7 +86,13 @@ def excel(lignes, t, titre, logo):
 
     total = entete + len(lignes) + 2
     ws.cell(row=total, column=3, value=f"{t('total_articles')} : {len(lignes)}").font = Font(bold=True)
+    if total_general is not None:
+        ws.cell(row=total, column=8, value=t("total_ht")).font = Font(bold=True)
+        c = ws.cell(row=total, column=9, value=total_general)
+        c.font = Font(bold=True, color=ROUGE, size=12)
+        c.number_format = '#,##0.00 "€"'
     ws.cell(row=total + 1, column=3, value=t("mention_doc")).font = Font(size=9, italic=True, color="6B7280")
+    ws.cell(row=total + 2, column=3, value=t("prix_note")).font = Font(size=9, italic=True, color="6B7280")
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -98,7 +107,7 @@ class _PDF(FPDF):
         self.cell(0, 6, f"{self.page_no()}/{{nb}}", align="R")
 
 
-def pdf(lignes, t, titre, logo):
+def pdf(lignes, t, titre, logo, total_general_txt=None):
     doc = _PDF(orientation="P", unit="mm", format="A4")
     doc.mention = t("mention_doc")
     police = None
@@ -130,7 +139,7 @@ def pdf(lignes, t, titre, logo):
     doc.ln(4)
 
     # Colonnes : photo, code, désignation (+ finition, dimensions), quantité, page
-    larg = {"photo": 26, "code": 26, "designation": 98, "quantite": 22, "page": 14}
+    larg = {"photo": 24, "code": 22, "designation": 66, "quantite": 20, "prix": 22, "total": 24, "page": 12}
     hauteur = 22
 
     def entete():
@@ -162,10 +171,10 @@ def pdf(lignes, t, titre, logo):
         doc.set_xy(x + 1, y + 3)
         doc.set_text_color(28, 31, 36)
         doc.set_font(doc.police, "B", 9)
-        doc.multi_cell(larg["designation"] - 2, 4.5, lg["designation"], new_x="LEFT", new_y="NEXT", max_line_height=4.5)
+        doc.multi_cell(larg["designation"] - 2, 4.5, lg["designation"], new_x="LEFT", new_y="NEXT", max_line_height=4.5, align="L")
         doc.set_font(doc.police, size=8)
         doc.set_text_color(107, 114, 128)
-        doc.multi_cell(larg["designation"] - 2, 4, f"{lg['finition']}  ·  {lg['dimensions']}", new_x="LEFT", new_y="NEXT")
+        doc.multi_cell(larg["designation"] - 2, 4, f"{lg['finition']}  ·  {lg['dimensions']}", new_x="LEFT", new_y="NEXT", align="L")
         x += larg["designation"]
         doc.set_xy(x, y)
         doc.set_font(doc.police, "B", 11)
@@ -173,9 +182,27 @@ def pdf(lignes, t, titre, logo):
         doc.cell(larg["quantite"], hauteur, f"{lg['quantite']} {lg['unite']}", align="C")
         x += larg["quantite"]
         doc.set_font(doc.police, size=9)
+        doc.set_text_color(28, 31, 36)
+        doc.cell(larg["prix"], hauteur, lg["prix_txt"], align="R")
+        doc.set_font(doc.police, "B", 9)
+        doc.cell(larg["total"], hauteur, lg["total_txt"], align="R")
+        x += larg["prix"] + larg["total"]
+        doc.set_font(doc.police, size=9)
         doc.set_text_color(107, 114, 128)
         doc.cell(larg["page"], hauteur, str(lg["page"]), align="C")
         doc.set_draw_color(230, 232, 236)
         doc.line(doc.l_margin, y + hauteur, doc.l_margin + sum(larg.values()), y + hauteur)
         doc.set_xy(doc.l_margin, y + hauteur)
+    if total_general_txt is not None:
+        if doc.get_y() + 20 > doc.h - 18:
+            doc.add_page()
+        doc.ln(3)
+        doc.set_font(doc.police, "B", 11)
+        doc.set_text_color(28, 31, 36)
+        doc.cell(sum(larg.values()) - larg["total"] - larg["page"], 9, t("total_ht"), align="R")
+        doc.set_text_color(227, 6, 19)
+        doc.cell(larg["total"], 9, total_general_txt, align="R", new_x="LMARGIN", new_y="NEXT")
+        doc.set_font(doc.police, size=8)
+        doc.set_text_color(107, 114, 128)
+        doc.cell(0, 5, t("prix_note"), align="R")
     return bytes(doc.output())

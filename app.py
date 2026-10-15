@@ -20,6 +20,7 @@ import export_liste
 
 DATA = Path(__file__).parent / "DKC_S5_base_produits.xlsx"
 LOGO = Path(__file__).parent / "assets" / "dkc_logo.png"
+PRIX = Path(__file__).parent / "DKC_S5_prix.xlsx"
 PHOTOS = Path(__file__).parent / "assets" / "photos"
 
 # Ordre des choix proposés au client, après le produit (libellés dans i18n.py)
@@ -191,9 +192,20 @@ st.markdown(
     .st-key-langue button:nth-of-type(3)::before {background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3CclipPath id='t'%3E%3Cpath d='M30 15h30v15zv15H0zH0V0zV0h30z'/%3E%3C/clipPath%3E%3Cpath fill='%23012169' d='M0 0v30h60V0z'/%3E%3Cpath stroke='%23fff' stroke-width='6' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23C8102E' stroke-width='4' clip-path='url(%23t)' d='M0 0l60 30m0-30L0 30'/%3E%3Cpath stroke='%23fff' stroke-width='10' d='M30 0v30M0 15h60'/%3E%3Cpath stroke='%23C8102E' stroke-width='6' d='M30 0v30M0 15h60'/%3E%3C/svg%3E");}
     [class*="st-key-acc_"] .stButton button {padding: 0.25rem 0.6rem; min-height: 0; font-size: 0.8rem; border-radius: 9px;}
     .dans-liste {font-size: 0.75rem; color: #15803D; font-weight: 600;}
+    .acc-prix {font-weight: 800; font-size: 1rem; color: var(--ink); margin-top: 0.2rem;}
+    .acc-prix small {font-weight: 500; font-size: 0.72rem; color: var(--muted);}
+    .prix-fiche {font-weight: 800; color: var(--ink);}
+    .lt-prix {font-size: 0.85rem; color: var(--ink); text-align: right;}
+    .lt-prix small {color: var(--muted); font-size: 0.72rem;}
+    .lt-total {font-weight: 800; font-size: 0.92rem; color: var(--ink); text-align: right;}
+    .lt-pied {display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 2px solid var(--ink);
+      padding: 0.7rem 0 0.3rem; font-size: 0.75rem; color: var(--muted);}
+    .total-ht {font-size: 0.95rem; color: var(--ink); font-weight: 600; text-align: right; white-space: nowrap;}
+    .total-ht b {font-size: 1.35rem; color: var(--dkc); margin-left: 0.5rem;}
     .st-key-liste_table {background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 0.3rem 0.9rem 0.4rem;
       gap: 0; margin-bottom: 0.8rem;}
     .lt-entete {font-size: 0.75rem; color: var(--muted); font-weight: 600; padding: 0.35rem 0;}
+    .lt-entete.droite {text-align: right;}
     [class*="st-key-lt_ligne_"] {border-top: 1px solid var(--line); padding: 0.4rem 0;}
     .lt-photo {height: 52px; display: flex; align-items: center; justify-content: center; background: #fff;}
     .lt-photo img {max-width: 100%; max-height: 100%; object-fit: contain;}
@@ -371,6 +383,20 @@ def charger():
     return df
 
 
+@st.cache_data
+def _charger_prix(_mtime):
+    if not PRIX.exists():
+        return {}
+    p = pd.read_excel(PRIX, sheet_name="Prix", dtype={"Code": str})
+    p = p[pd.to_numeric(p["Prix_HT_EUR"], errors="coerce").notna()]
+    return dict(zip(p["Code"], p["Prix_HT_EUR"].astype(float)))
+
+
+def prix_de(code):
+    """Prix unitaire HT d'un code, ou None (sur demande)."""
+    return _charger_prix(PRIX.stat().st_mtime if PRIX.exists() else 0).get(str(code))
+
+
 # ---------- Langue ----------
 LANG = st.session_state.get("lang") or "fr"
 
@@ -407,6 +433,16 @@ def fmt(col, v):
 
 def unite(u):
     return {"it": {"pcs": "pz"}, "fr": {"pcs": "pcs"}}.get(LANG, {}).get(u, u)
+
+
+def euros(v):
+    """1234.5 → « 1 234,50 € » (FR/IT) ou « €1,234.50 » (EN) ; None → sur demande."""
+    if v is None or pd.isna(v):
+        return t("prix_demande")
+    txt = f"{v:,.2f}"
+    if LANG == "en":
+        return f"€{txt}"
+    return txt.replace(",", " ").replace(".", ",") + " €"
 
 
 def pluriel(n):
@@ -540,7 +576,8 @@ def carte_accessoire(produit, g, r):
         cond = (f"{int(ligne['Conditionnement'])} {unite(ligne['Unité_cond'])}"
                 if pd.notna(ligne["Conditionnement"]) else "")
         fin = "" if ligne["Finition"] in (r["Finition"], "Unique") else f" · {ligne['Finition']}"
-        md(f'<div class="acc-ref"><b>{ligne["Code"]}</b><span>{cond}{fin}</span></div>{cov_html}')
+        md(f'<div class="acc-ref"><b>{ligne["Code"]}</b><span>{cond}{fin}</span></div>'
+           f'<div class="acc-prix">{euros(prix_de(ligne["Code"]))} <small>{t("ht")} / {unite("pcs")}</small></div>{cov_html}')
         boutons_ajout(ligne, [produit], couvercle, [f"Couvercle – {produit}", produit])
 
 
@@ -587,6 +624,7 @@ def panneau_chemin(sel):
         if cg is not None and len(cg):
             couvercle = cg.iloc[0]
             details.append((t("couvercle_assorti"), f"<b>{couvercle['Code']}</b>"))
+    details.append((t("prix_unitaire"), f'<span class="prix-fiche">{euros(prix_de(r["Code"]))}</span>'))
     details.append((t("page_catalogue"), str(int(r["Page_catalogue"]))))
     rows = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in details)
     titre = t("chemin_fore" if fore else "chemin_non_fore") + (t("a_charnieres") if charn else "")
@@ -694,16 +732,25 @@ def bloc_calcul(r):
                 "photo": photo_src(ph), "code": lg["Code"],
                 "designation": designation({"produit": lg["Produit"], "abrev": lg["Abrév"] if pd.notna(lg["Abrév"]) else "",
                                             "perfore": lg["Perforé"], "charn": lg["Couvercle_charnières"], "ep": lg["Épaisseur"]}),
-                "quantite": q, "motif": motif} for lg, ph, q, motif in lignes]),
+                "quantite": q, "prix": euros(prix_de(lg["Code"])),
+                "total": euros(prix_de(lg["Code"]) * q) if prix_de(lg["Code"]) is not None else "—",
+                "motif": motif} for lg, ph, q, motif in lignes]),
                 hide_index=True, width="stretch", row_height=56, height=40 + 56 * len(lignes),
                 column_config={
                     "photo": st.column_config.ImageColumn(t("col_photo"), width="small"),
                     "code": st.column_config.TextColumn(t("col_code"), width="small"),
                     "designation": st.column_config.TextColumn(t("col_designation"), width="large"),
                     "quantite": st.column_config.NumberColumn(t("col_quantite"), width="small"),
+                    "prix": st.column_config.TextColumn(t("col_prix"), width="small"),
+                    "total": st.column_config.TextColumn(t("col_total"), width="small"),
                     "motif": st.column_config.TextColumn(t("col_motif")),
                 })
-            st.button(t("ajouter_tout"), key="calc_ajouter", type="primary", on_click=tout_ajouter, args=(lignes,))
+            total = sum((prix_de(lg["Code"]) or 0) * q for lg, _, q, _ in lignes)
+            cb, ct = st.columns([1, 1], vertical_alignment="center")
+            with cb:
+                st.button(t("ajouter_tout"), key="calc_ajouter", type="primary", on_click=tout_ajouter, args=(lignes,))
+            with ct:
+                md(f'<div class="total-ht">{t("total_ht")} <b>{euros(total)}</b></div>')
         with st.expander(t("hypotheses")):
             st.markdown(t("hyp_texte"))
 
@@ -831,11 +878,19 @@ def bloc_liste(num):
                "finition": fmt("Finition", l["finition"]), "dimensions": dimensions(l),
                "quantite": l["qte"], "unite": unite(l["unite"]), "page": l["page"]} for c, l in p.items()]
     st.caption(t("info_liste"))
-    largeurs = [0.9, 1, 3.3, 1.5, 0.75, 0.55, 0.45]
+    for lg in lignes:
+        pu = prix_de(lg["code"])
+        lg["prix"], lg["prix_txt"] = pu, euros(pu)
+        lg["total"] = pu * lg["quantite"] if pu is not None else None
+        lg["total_txt"] = euros(lg["total"]) if pu is not None else "—"
+    total_general = sum(lg["total"] or 0 for lg in lignes)
+    largeurs = [0.85, 0.95, 2.9, 1.45, 0.95, 1, 0.45, 0.4]
     with st.container(key="liste_table"):
         entete = st.columns(largeurs, gap="small")
-        for col, cle in zip(entete, ("col_photo", "col_code", "col_designation", "col_quantite", "col_unite", "col_page")):
-            col.markdown(f'<div class="lt-entete">{t(cle)}</div>', unsafe_allow_html=True)
+        for col, cle in zip(entete, ("col_photo", "col_code", "col_designation", "col_quantite", "col_prix",
+                                     "col_total", "col_page")):
+            droite = " droite" if cle in ("col_prix", "col_total") else ""
+            col.markdown(f'<div class="lt-entete{droite}">{t(cle)}</div>', unsafe_allow_html=True)
         for lg in lignes:
             code = lg["code"]
             cle = f"liste_q_{code}"
@@ -849,18 +904,22 @@ def bloc_liste(num):
                 with c[3]:
                     st.number_input(t("col_quantite"), min_value=0, max_value=99999, step=1, key=cle,
                                     label_visibility="collapsed", on_change=maj_qte, args=(code, cle))
-                c[4].markdown(f'<div class="lt-det">{lg["unite"]}</div>', unsafe_allow_html=True)
-                c[5].markdown(f'<div class="lt-det">{lg["page"]}</div>', unsafe_allow_html=True)
-                with c[6]:
+                c[4].markdown(f'<div class="lt-prix">{lg["prix_txt"]}<small> / {lg["unite"]}</small></div>',
+                              unsafe_allow_html=True)
+                c[5].markdown(f'<div class="lt-total">{lg["total_txt"]}</div>', unsafe_allow_html=True)
+                c[6].markdown(f'<div class="lt-det">{lg["page"]}</div>', unsafe_allow_html=True)
+                with c[7]:
                     st.button("🗑", key=f"lt_suppr_{code}", on_click=retirer, args=(code,), help=t("retirer"))
+        md(f'<div class="lt-pied"><span>{t("prix_note")}</span>'
+           f'<span class="total-ht">{t("total_ht")} <b>{euros(total_general)}</b></span></div>')
     export = [{**lg, "photo": chemin_photo(l["photos"])} for lg, l in zip(lignes, p.values())]
     c1, c2, c3 = st.columns([1, 1, 1])
     with c1:
-        st.download_button(t("telecharger_excel"), data=export_liste.excel(export, t, t("titre_doc"), LOGO),
+        st.download_button(t("telecharger_excel"), data=export_liste.excel(export, t, t("titre_doc"), LOGO, total_general),
                            file_name="DKC_liste_materiel.xlsx", width="stretch", type="primary",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     with c2:
-        st.download_button(t("telecharger_pdf"), data=export_liste.pdf(export, t, t("titre_doc"), LOGO),
+        st.download_button(t("telecharger_pdf"), data=export_liste.pdf(export, t, t("titre_doc"), LOGO, euros(total_general)),
                            file_name="DKC_liste_materiel.pdf", mime="application/pdf",
                            width="stretch", type="primary")
     with c3:
@@ -989,6 +1048,7 @@ def recherche_directe():
             details.append((t("tua"), f"{int(r['TUA_cm2'])} cm²"))
         if pd.notna(r["Conditionnement"]):
             details.append((t("conditionnement"), f"{int(r['Conditionnement'])} {unite(r['Unité_cond'])}"))
+        details.append((t("prix_unitaire"), f'<span class="prix-fiche">{euros(prix_de(r["Code"]))}</span>'))
         details.append((t("page_catalogue"), str(int(r["Page_catalogue"]))))
 
         photos_resultat = [r["Produit"], f"famille {famille}"]  # photo de la famille en secours
