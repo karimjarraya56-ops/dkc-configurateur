@@ -187,6 +187,13 @@ TEXTES = {
               "• 1.5 mm thickness (no interlocking): 2 GTO plates at every junction between lengths.  \n"
               "• Screws, supports and end caps: add them according to the site.  \n"
               "Check the quantities with your DKC contact."},
+    # Design v4
+    "ma_liste_court": {"fr": "Ma liste", "it": "La mia lista", "en": "My list"},
+    "et_ligne": {"fr": "Ligne", "it": "Linea", "en": "Line"},
+    "et_chemin": {"fr": "Chemin", "it": "Canale", "en": "Tray"},
+    "et_calcul": {"fr": "Calcul", "it": "Calcolo", "en": "Quantities"},
+    "et_accessoires": {"fr": "Accessoires", "it": "Accessori", "en": "Fittings"},
+    "et_liste": {"fr": "Liste", "it": "Lista", "en": "List"},
 }
 
 FINITIONS = {

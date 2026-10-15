@@ -196,6 +196,78 @@ st.markdown(
     .resume {display: flex; align-items: center; gap: 0.8rem; background: #FFF1F2; border-left: 4px solid var(--dkc);
       border-radius: 10px; padding: 0.7rem 1rem; margin: 0.6rem 0; font-size: 0.95rem;}
     .resume b {color: var(--dkc); font-size: 1.25rem;}
+
+    /* ===== Design v4 ===== */
+    .block-container {padding-top: 0.8rem;}
+    div:has(> .st-key-entete) {position: sticky; top: 0.4rem; z-index: 100;}
+    .st-key-entete {background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 16px; padding: 0.5rem 1rem;
+      box-shadow: 0 6px 20px rgba(20,23,28,.06); margin-bottom: 0.9rem;}
+    .logo-entete img {height: 30px; display: block;}
+    .st-key-modes [data-testid="stButtonGroup"] {justify-content: center;}
+    .st-key-modes button {background: transparent !important; border: none !important; border-radius: 0 !important;
+      border-bottom: 2.5px solid transparent !important; padding: 0.45rem 0.9rem !important; font-weight: 600 !important;
+      color: var(--muted) !important; box-shadow: none !important;}
+    .st-key-modes button:hover {color: var(--ink) !important;}
+    .st-key-modes button[aria-checked="true"] {color: var(--dkc) !important; border-bottom-color: var(--dkc) !important;}
+    .st-key-modes button[aria-checked="true"] * {color: var(--dkc) !important;}
+    .badge-liste {display: inline-flex; align-items: center; gap: 0.5rem; background: var(--ink); color: #fff !important;
+      border-radius: 999px; padding: 0.42rem 0.55rem 0.42rem 0.95rem; font-weight: 700; font-size: 0.85rem;
+      text-decoration: none !important; white-space: nowrap; transition: background .15s;}
+    .badge-liste:hover {background: var(--dkc);}
+    .badge-liste span {background: #fff; color: var(--ink); border-radius: 999px; min-width: 24px; height: 24px;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; padding: 0 0.4rem;}
+    .badge-liste.plein span {background: var(--dkc); color: #fff;}
+    .hero {border-radius: 16px; padding: 1.25rem 1.6rem; margin-bottom: 1rem; display: flex; align-items: center;
+      justify-content: space-between; gap: 1.5rem;}
+    .hero h1 {font-size: 1.55rem;}
+    .hero p {margin: 0.25rem 0 0; font-size: 0.92rem;}
+    .hero-tag {font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: .85; margin-bottom: 0.3rem;}
+    .hero .stats {flex-wrap: nowrap; position: relative; z-index: 1;}
+    .hero .stat {text-align: center; padding: 0.5rem 0.9rem; line-height: 1.2;}
+    .hero .stat b {display: block; font-size: 1.25rem; margin: 0;}
+    .stepper {display: flex; gap: 0.3rem; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 0.4rem; margin-bottom: 0.3rem; overflow-x: auto;}
+    .stepper a {flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.45rem 0.6rem;
+      border-radius: 10px; text-decoration: none !important; color: var(--muted) !important; font-size: 0.83rem;
+      font-weight: 600; white-space: nowrap; transition: background .15s;}
+    .stepper a:hover {background: var(--bg);}
+    .stepper .n {width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line);
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800;}
+    .stepper a.done {color: var(--ink) !important;}
+    .stepper a.done .n {background: #15803D; border-color: #15803D; color: #fff;}
+    .stepper a.actif {background: var(--dkc-soft); color: var(--dkc) !important;}
+    .stepper a.actif .n {background: var(--dkc); border-color: var(--dkc); color: #fff;}
+    .stepper .sep {color: #CBD0D8; align-self: center;}
+    .step {scroll-margin-top: 90px;}
+    #ma-liste {scroll-margin-top: 90px;}
+    .step .num {box-shadow: 0 3px 8px rgba(227,6,19,.25);}
+    .st-key-carte_chemin {background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 0.4rem 1.2rem 1rem;}
+    .st-key-carte_chemin .step {margin-top: 0.8rem;}
+    .lib-choix {font-weight: 600; font-size: 0.88rem; color: var(--ink); display: flex; align-items: center; gap: 0.45rem;}
+    .lib-choix::before {content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dkc); flex: 0 0 6px;}
+    .lib-choix small {display: block; font-weight: 500; color: var(--muted); font-size: 0.72rem;}
+    [class*="st-key-ligne_choix_"] {border-top: 1px solid var(--line); padding-top: 0.55rem;}
+    .st-key-carte_chemin [data-testid="stButtonGroup"] button[aria-checked="true"] {box-shadow: 0 0 0 2px rgba(227,6,19,.15);
+      font-weight: 600;}
+    @media (max-width: 640px) {
+      div:has(> .st-key-entete) {position: static;}
+      .st-key-entete [data-testid="stHorizontalBlock"] {flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem;}
+      .st-key-entete [data-testid="stColumn"] {width: auto !important; flex: 0 0 auto !important; min-width: 0 !important;}
+      .st-key-entete [data-testid="stColumn"]:nth-child(2) {order: 9; flex: 1 1 100% !important;}
+      .st-key-entete [data-testid="stColumn"]:nth-child(1) {flex: 1 1 auto !important;}
+      .logo-entete img {height: 24px;}
+      .badge-liste {padding: 0.32rem 0.45rem 0.32rem 0.75rem; font-size: 0.78rem;}
+      .st-key-modes [data-testid="stButtonGroup"] {justify-content: flex-start;}
+      .st-key-modes button {padding: 0.35rem 0.5rem !important; font-size: 0.8rem !important;}
+      .st-key-langue button {padding: 0.3rem 0.45rem !important;}
+      .hero {flex-direction: column; align-items: flex-start; padding: 1rem 1.1rem;}
+      .hero p {display: none;}
+      .hero h1 {font-size: 1.25rem;}
+      .hero .stat {padding: 0.35rem 0.6rem;}
+      .stepper a .lib {display: none;}
+      .stepper a.actif .lib {display: inline;}
+    }
     .vendu {display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--dkc); background: #FFF1F2;
       border: 1px solid #FECDD3; border-radius: 999px; padding: 0.15rem 0.6rem; margin-bottom: 0.4rem;}
     .titre-extra {font-weight: 700; font-size: 0.85rem; margin-top: 1.1rem; color: var(--ink);}
@@ -259,7 +331,8 @@ def etape(num, label, info=""):
     if num == "":  # sous-étape (sans numéro)
         st.markdown(f'<div class="sous-etape">{label}{info}</div>', unsafe_allow_html=True)
         return
-    st.markdown(f'<div class="step"><span class="num">{num}</span>{label}{info}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="step" id="etape-{num}"><span class="num">{num}</span>{label}{info}</div>',
+                unsafe_allow_html=True)
 
 
 @st.cache_data
@@ -350,6 +423,8 @@ def choix(df, col, num, prefixe="opt"):
     vals = df[col].dropna().unique().tolist()
     ordre = list(FINITIONS_TR)
     vals = sorted(vals, key=lambda x: (ordre.index(x) if x in ordre else 99, isinstance(x, str), x))
+    if num == "" and prefixe == "ch":
+        return choix_ligne(df, col, label, vals, prefixe)
     if len(vals) == 1:
         etape(num, label)
         st.markdown(f'<span class="seule">{t("seule_option")}{" :" if LANG == "fr" else ":"} <b>{fmt(col, vals[0])}</b></span>',
@@ -367,6 +442,23 @@ df = charger()
 s5 = df[df["Ligne"] == "S5"]
 NOMS = set(s5["Produit"])
 PRODUITS_EN = {**s5.groupby("Produit")["Product_EN"].first().dropna().to_dict(), **PRODUITS_EN_EXTRA}
+
+
+def choix_ligne(df, col, label, vals, prefixe):
+    """Choix compact sur une ligne : libellé à gauche, options à droite."""
+    with st.container(key=f"ligne_choix_{prefixe}_{slug(col)}"):
+        g, d = st.columns([1, 3.2], vertical_alignment="center")
+        with g:
+            info = t("seule_option") if len(vals) == 1 else f"{len(vals)} {t('options')}"
+            md(f'<div class="lib-choix"><div>{label}<small>{info}</small></div></div>')
+        with d:
+            if len(vals) == 1:
+                md(f'<span class="seule"><b>{fmt(col, vals[0])}</b></span>')
+                return df[df[col] == vals[0]], vals[0]
+            v = st.pills(label, vals, format_func=lambda x: fmt(col, x), default=vals[0], label_visibility="collapsed",
+                         key=f"{prefixe}_{col}_{abs(hash(tuple(map(str, vals))))}")
+    v = vals[0] if v is None else v
+    return df[df[col] == v], v
 
 
 def finitions_pour(fin):
@@ -705,6 +797,7 @@ def vider():
 def bloc_liste(num):
     p = panier()
     n = len(p)
+    md('<div id="ma-liste"></div>')
     etape(num, t("ma_liste"), f"{n} {t('article_1') if n <= 1 else t('article_n')}")
     if not p:
         md(f'<div class="seule">{t("liste_vide")}</div>')
@@ -742,30 +835,49 @@ def bloc_liste(num):
         st.button(t("vider"), on_click=vider, width="stretch")
 
 
+def stepper(barre, chemin_ok):
+    """Barre de progression cliquable en haut du configurateur."""
+    n = len(panier())
+    actif = 2 if not chemin_ok else (5 if n else 3)
+    faits = {1, 2} if chemin_ok else {1}
+    etapes = [(1, t("et_ligne")), (2, t("et_chemin")), (3, t("et_calcul")), (4, t("et_accessoires")),
+              (5, f"{t('et_liste')} ({n})")]
+    liens = []
+    for num, lib in etapes:
+        classe = "actif" if num == actif else ("done" if num in faits else "")
+        puce = "✓" if num in faits and num != actif else num
+        liens.append(f'<a class="{classe}" href="#etape-{num}"><span class="n">{puce}</span><span class="lib">{lib}</span></a>')
+    barre.markdown(f'<div class="stepper">{"".join(liens)}</div>', unsafe_allow_html=True)
+
+
 def configurateur():
+    barre = st.empty()
     gauche, droite = st.columns([1.55, 1], gap="large")
     with gauche:
         etape(1, t("ligne"))
         ligne = st.pills("Ligne", ["S5", "S2", "S3"], default="S5", label_visibility="collapsed", key="ligne",
                          format_func=lambda x: x if x == "S5" else f"{x} · {t('bientot')}")
         if ligne not in (None, "S5"):
+            stepper(barre, False)
             st.info(t("info_s2_s3"))
             return
-        etape(2, t("votre_chemin"), t("info_chemin"))
-        sel = s5[s5["Produit"] == RECT]
-        for col in ETAPES_CHEMIN:
-            if sel[col].dropna().nunique() == 0:
-                continue
-            sel, _ = choix(sel, col, "", prefixe="ch")
-            if col == "Finition":
-                with st.expander(t("quelle_finition")):
-                    conseil_finition()
+        with st.container(key="carte_chemin"):
+            etape(2, t("votre_chemin"), t("info_chemin"))
+            sel = s5[s5["Produit"] == RECT]
+            for col in ETAPES_CHEMIN:
+                if sel[col].dropna().nunique() == 0:
+                    continue
+                sel, _ = choix(sel, col, "", prefixe="ch")
+                if col == "Finition":
+                    with st.expander(t("quelle_finition")):
+                        conseil_finition()
     with droite, st.container(key="panneau"):
         panneau_chemin(sel)
     if len(sel) == 1:
         bloc_calcul(sel.iloc[0])
         bloc_accessoires(sel.iloc[0])
     bloc_liste(5)
+    stepper(barre, len(sel) == 1)
 
 
 def recherche_directe():
@@ -889,26 +1001,29 @@ def recherche_directe():
 
 # ---------- En-tête ----------
 logo_b64 = base64.b64encode(LOGO.read_bytes()).decode()
-md(f"""<div class="topbar"><img src="data:image/png;base64,{logo_b64}" alt="DKC">
-    <span class="tag">{t("tag")}</span></div>
-    <div class="hero">
-      <h1>{t("titre")}</h1>
-      <p>{t("sous_titre")}</p>
+with st.container(key="entete"):
+    c_logo, c_mode, c_liste, c_lang = st.columns([1, 2.7, 1, 1], vertical_alignment="center")
+    with c_logo:
+        md(f'<div class="logo-entete"><img src="data:image/png;base64,{logo_b64}" alt="DKC"></div>')
+    with c_mode, st.container(key="modes"):
+        mode = st.segmented_control("Mode", ["config", "recherche"], default="config", key="mode",
+                                    format_func=lambda m: t("mode_config" if m == "config" else "mode_recherche"),
+                                    label_visibility="collapsed")
+    with c_liste:
+        nb = len(panier())
+        md(f'<a class="badge-liste{" plein" if nb else ""}" href="#ma-liste">🧾 {t("ma_liste_court")} <span>{nb}</span></a>')
+    with c_lang, st.container(key="langue"):
+        st.segmented_control("Langue", list(LANGUES), default="fr", key="lang", format_func=LANGUES.get,
+                             label_visibility="collapsed")
+
+md(f"""<div class="hero">
+      <div><div class="hero-tag">{t("tag")}</div><h1>{t("titre")}</h1><p>{t("sous_titre")}</p></div>
       <div class="stats">
         <span class="stat"><b>{s5['Produit'].nunique()}</b>{t("stat_produits")}</span>
         <span class="stat"><b>{f'{len(s5):,}'.replace(',', ' ')}</b>{t("stat_refs")}</span>
         <span class="stat"><b>{s5['Finition'].nunique()}</b>{t("stat_finitions")}</span>
       </div>
     </div>""")
-
-barre_mode, barre_langue = st.columns([4, 1], vertical_alignment="center")
-with barre_mode:
-    mode = st.segmented_control("Mode", ["config", "recherche"], default="config", key="mode",
-                                format_func=lambda m: t("mode_config" if m == "config" else "mode_recherche"),
-                                label_visibility="collapsed")
-with barre_langue, st.container(key="langue"):
-    st.segmented_control("Langue", list(LANGUES), default="fr", key="lang", format_func=LANGUES.get,
-                         label_visibility="collapsed")
 
 if mode == "recherche":
     recherche_directe()
