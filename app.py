@@ -2,6 +2,7 @@
 Lancer :  streamlit run app.py
 """
 import base64
+import math
 import re
 import unicodedata
 from pathlib import Path
@@ -191,6 +192,12 @@ st.markdown(
     [class*="st-key-acc_"] .stButton button {padding: 0.25rem 0.6rem; min-height: 0; font-size: 0.8rem; border-radius: 9px;}
     .dans-liste {font-size: 0.75rem; color: #15803D; font-weight: 600;}
     .st-key-panneau .stButton button, .st-key-panneau2 .stButton button {border-radius: 10px;}
+    .st-key-calcul {background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 1.1rem 1.2rem;}
+    .resume {display: flex; align-items: center; gap: 0.8rem; background: #FFF1F2; border-left: 4px solid var(--dkc);
+      border-radius: 10px; padding: 0.7rem 1rem; margin: 0.6rem 0; font-size: 0.95rem;}
+    .resume b {color: var(--dkc); font-size: 1.25rem;}
+    .vendu {display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--dkc); background: #FFF1F2;
+      border: 1px solid #FECDD3; border-radius: 999px; padding: 0.15rem 0.6rem; margin-bottom: 0.4rem;}
     .titre-extra {font-weight: 700; font-size: 0.85rem; margin-top: 1.1rem; color: var(--ink);}
     </style>
     """,
@@ -485,9 +492,112 @@ def panneau_chemin(sel):
     boutons_ajout(r, photos, couvercle, ["couvercle pour element rectiligne"], chemin=True)
 
 
+# ---------- Calculateur de métrage ----------
+ACC_CALCUL = ["Courbe plate à 90°", "Courbe plate à 45°", "Dérivation plate en «T»", "Dérivation plate à croisement",
+              "Courbe en montée à 90°", "Courbe en descente à 90°", "Courbe en montée à 45°", "Courbe en descente à 45°",
+              "Tête de fermeture"]
+SANS_JONCTION = {"Tête de fermeture"}  # se pose en bout de parcours, sans joint
+
+
+def photos_chemin(r):
+    variante = "fore" if str(r["Perforé"]).startswith("Foré") else "non fore"
+    photos = [f"element rectiligne {variante}"]
+    if r["Couvercle_charnières"] == "Oui":
+        photos.insert(0, f"element rectiligne charnieres {variante}")
+    return photos
+
+
+def nombre(x):
+    """3.0 → « 3 », 2.5 → « 2,5 » (virgule en FR/IT)."""
+    txt = f"{x:g}"
+    return txt if LANG == "en" else txt.replace(".", ",")
+
+
+def calcul_parcours(r, metres, qtes, avec_cov):
+    """Lignes (série produit, photos, quantité, motif) pour un parcours."""
+    lignes = []
+    long_m = r["L_mm"] / 1000
+    n = math.ceil(round(metres / long_m, 6)) if metres > 0 else 0
+    if n:
+        lignes.append((r, photos_chemin(r), n, t("motif_chemin").format(m=nombre(metres), l=nombre(long_m))))
+        if avec_cov and r["Couvercle_charnières"] != "Oui":
+            cg, _ = compatibles("Couvercle pour élément rectiligne", r)
+            if cg is not None and len(cg):
+                lignes.append((cg.iloc[0], ["couvercle pour element rectiligne"], n, t("motif_couvercle")))
+    jonctions = 0
+    for produit, q in qtes.items():
+        if not q:
+            continue
+        g, _ = compatibles(produit, r)
+        lignes.append((g.iloc[0], [produit], q, t("motif_acc")))
+        if produit not in SANS_JONCTION:
+            jonctions += q
+        if avec_cov and f"Couvercle – {produit}" in NOMS:
+            cg, _ = compatibles(f"Couvercle – {produit}", r)
+            if cg is not None and len(cg):
+                lignes.append((cg.iloc[0], [f"Couvercle – {produit}", produit], q, t("motif_cov_acc")))
+    if str(r["Épaisseur"]).startswith("1,5") and n > 1:
+        jonctions += n - 1
+    if jonctions:
+        jg, _ = compatibles("Joint linéaire", r)
+        if jg is not None and len(jg):
+            lignes.append((jg.iloc[0], ["joint lineaire"], 2 * jonctions, t("motif_gto").format(j=jonctions)))
+    return lignes, n, long_m
+
+
+def tout_ajouter(lignes):
+    for ligne, photos, q, _ in lignes:
+        ajouter(ligne.to_dict(), photos, q)
+
+
+def bloc_calcul(r):
+    etape(3, t("calcul"), t("calcul_info"))
+    with st.container(key="calcul"):
+        long_m = r["L_mm"] / 1000
+        md(f'<span class="vendu">{t("vendu_par").format(l=nombre(long_m))}</span>')
+        c1, c2 = st.columns([1.3, 1], vertical_alignment="bottom")
+        with c1:
+            metres = st.number_input(t("longueur_totale"), min_value=0.0, max_value=10000.0, step=1.0,
+                                     value=0.0, format="%g", key="calc_m")
+        with c2:
+            avec_cov = st.toggle(t("avec_couvercles"), value=True, key="calc_cov")
+        etape("", t("acc_parcours"))
+        dispo = [p for p in ACC_CALCUL if p in NOMS and compatibles(p, r)[0] is not None]
+        qtes = {}
+        for k in range(0, len(dispo), 3):
+            cols = st.columns(3, gap="small")
+            for col, produit in zip(cols, dispo[k:k + 3]):
+                with col:
+                    qtes[produit] = st.number_input(nom(produit), min_value=0, max_value=999, step=1, value=0,
+                                                    key=f"calc_{slug(produit)}")
+        lignes, n, _ = calcul_parcours(r, metres, qtes, avec_cov)
+        if not lignes:
+            st.caption(t("calcul_vide"))
+        else:
+            if n:
+                total = n * long_m
+                md(f'<div class="resume">📏 <span>{t("resume_metrage").format(m=nombre(metres), n=f"<b>{n}</b>", l=nombre(long_m), total=nombre(total), chute=nombre(round(total - metres, 3)))}</span></div>')
+            st.dataframe(pd.DataFrame([{
+                "photo": photo_src(ph), "code": lg["Code"],
+                "designation": designation({"produit": lg["Produit"], "abrev": lg["Abrév"] if pd.notna(lg["Abrév"]) else "",
+                                            "perfore": lg["Perforé"], "charn": lg["Couvercle_charnières"], "ep": lg["Épaisseur"]}),
+                "quantite": q, "motif": motif} for lg, ph, q, motif in lignes]),
+                hide_index=True, width="stretch", row_height=56, height=40 + 56 * len(lignes),
+                column_config={
+                    "photo": st.column_config.ImageColumn(t("col_photo"), width="small"),
+                    "code": st.column_config.TextColumn(t("col_code"), width="small"),
+                    "designation": st.column_config.TextColumn(t("col_designation"), width="large"),
+                    "quantite": st.column_config.NumberColumn(t("col_quantite"), width="small"),
+                    "motif": st.column_config.TextColumn(t("col_motif")),
+                })
+            st.button(t("ajouter_tout"), key="calc_ajouter", type="primary", on_click=tout_ajouter, args=(lignes,))
+        with st.expander(t("hypotheses")):
+            st.markdown(t("hyp_texte"))
+
+
 def bloc_accessoires(r):
     charn = r["Couvercle_charnières"] == "Oui"
-    etape(3, t("accessoires"), f"H {fmt('H_mm', r['H_mm'])} × B {fmt('B_mm', r['B_mm'])} · {r['Finition']}")
+    etape(4, t("accessoires"), f"H {fmt('H_mm', r['H_mm'])} × B {fmt('B_mm', r['B_mm'])} · {r['Finition']}")
     md(f"""<div class="bandeau"><div><div class="label">{t("chemin_choisi")}</div><div class="code">{r['Code']}</div></div>
         <div class="muted">{t("bandeau")}</div></div>""")
     onglets = []
@@ -653,8 +763,9 @@ def configurateur():
     with droite, st.container(key="panneau"):
         panneau_chemin(sel)
     if len(sel) == 1:
+        bloc_calcul(sel.iloc[0])
         bloc_accessoires(sel.iloc[0])
-    bloc_liste(4)
+    bloc_liste(5)
 
 
 def recherche_directe():
