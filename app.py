@@ -1,5 +1,6 @@
 """Configurateur DKC – Ligne S5 (version 3, FR / IT / EN)
-Lancer :  streamlit run app.py
+Lancer :  streamlit run app.py        (version DKC)
+          streamlit run sati/app.py   (version SATI Tunisia)
 """
 import base64
 import math
@@ -18,8 +19,18 @@ from i18n import LANGUES, PRODUITS_EN_EXTRA, PRODUITS_IT, TEXTES, VALEURS
 from i18n import RUBRIQUES as RUBRIQUES_TR
 import export_liste
 
+# Marque affichée : "dkc" par défaut, "sati" quand l'app est lancée par sati/app.py
+MARQUE = globals().get("MARQUE", "dkc")
+MARQUES = {
+    "dkc": {"nom": "DKC", "logo": "dkc_logo.png",
+            "export": {"accent": "E30613", "fond": "E30613", "texte": "FFFFFF"}},
+    "sati": {"nom": "SATI", "logo": "sati_logo.png",
+             "export": {"accent": "1A1A1A", "fond": "FFE100", "texte": "1A1A1A"}},
+}
+NOM_MARQUE = MARQUES[MARQUE]["nom"]
+
 DATA = Path(__file__).parent / "DKC_S5_base_produits.xlsx"
-LOGO = Path(__file__).parent / "assets" / "dkc_logo.png"
+LOGO = Path(__file__).parent / "assets" / MARQUES[MARQUE]["logo"]
 PRIX = Path(__file__).parent / "DKC_S5_prix.xlsx"
 PHOTOS = Path(__file__).parent / "assets" / "photos"
 
@@ -47,7 +58,7 @@ FAMILLES = {
 }
 ABREV_FAMILLE = {"Visserie": "VIS", "Retouche": "VER"}
 
-st.set_page_config(page_title=TEXTES["page_titre"][st.session_state.get("lang") or "fr"], page_icon=str(LOGO), layout="wide")
+st.set_page_config(page_title=TEXTES["page_titre"][st.session_state.get("lang") or "fr"].replace("DKC", NOM_MARQUE), page_icon=str(LOGO), layout="wide")
 
 st.markdown(
     """
@@ -399,12 +410,44 @@ def prix_de(code):
     return _charger_prix(PRIX.stat().st_mtime if PRIX.exists() else 0).get(str(code))
 
 
+# Habillage SATI : jaune et noir du logo
+CSS_SATI = """
+    <style>
+    :root {--dkc: #1A1A1A; --dkc-dark: #000; --dkc-soft: #FFF9D6; --jaune: #FFE100; --jaune-dark: #F2CF00;}
+    .hero {background: #141414; border-left: 8px solid var(--jaune);}
+    .hero::after {border-color: rgba(255,225,0,.10);}
+    .hero-tag {color: var(--jaune); opacity: 1;}
+    .stat {background: rgba(255,225,0,.08); border-color: rgba(255,225,0,.35);}
+    .stat b {color: var(--jaune);}
+    .step .num, .stepper a.actif .n, .badge-liste.plein span {background: var(--jaune); border-color: var(--jaune); color: #141414;}
+    .step .num {box-shadow: 0 3px 8px rgba(242,207,0,.45);}
+    .step .done {background: var(--ink); color: #fff;}
+    .stepper a.actif {color: var(--ink) !important;}
+    .sous-etape::before, .lib-choix::before, .barre div {background: var(--jaune-dark);}
+    .bandeau, .resume {border-left-color: var(--jaune);}
+    .resume, .vendu {background: var(--dkc-soft);}
+    .vendu {color: var(--ink); border-color: var(--jaune);}
+    .st-key-modes button[aria-checked="true"] {border-bottom-color: var(--jaune) !important;}
+    [class*="st-key-card_"]:hover {box-shadow: 0 8px 20px rgba(20,20,20,.10);}
+    [class*="st-key-card_"][class*="_sel"] {border-color: var(--jaune-dark); box-shadow: 0 0 0 3px rgba(255,225,0,.45);}
+    [class*="st-key-acc_"]:hover {border-color: var(--jaune-dark);}
+    .st-key-carte_chemin [data-testid="stButtonGroup"] button[aria-checked="true"] {box-shadow: 0 0 0 2px rgba(255,225,0,.6);}
+    [data-testid="stBaseButton-primary"] {background: var(--jaune) !important; border-color: var(--jaune) !important;
+      color: #141414 !important; font-weight: 700;}
+    [data-testid="stBaseButton-primary"]:hover {background: var(--jaune-dark) !important; border-color: var(--jaune-dark) !important;}
+    [data-testid="stBaseButton-primary"] * {color: #141414 !important;}
+    </style>
+"""
+if MARQUE == "sati":
+    st.markdown(CSS_SATI, unsafe_allow_html=True)
+
+
 # ---------- Langue ----------
 LANG = st.session_state.get("lang") or "fr"
 
 
 def t(cle):
-    return TEXTES[cle][LANG]
+    return TEXTES[cle][LANG].replace("DKC", NOM_MARQUE)
 
 
 def tr(dico, cle):
@@ -554,7 +597,7 @@ def abrev_de(g):
 def carte_accessoire(produit, g, r):
     with st.container(key=f"acc_{slug(produit)}"):
         ab = abrev_de(g)
-        md(img_html(photo_src(produit), "vign", ab or "DKC")
+        md(img_html(photo_src(produit), "vign", ab or NOM_MARQUE)
            + f'<div class="acc-nom">{nom(produit)}{f"<span>{ab}</span>" if ab else ""}</div>'
            + f'<div class="acc-desc">{DESCRIPTIONS_PAR_LANGUE[LANG].get(produit, "")}</div>')
         # Plusieurs versions possibles (base de sortie B1, longueur) : le client choisit
@@ -600,7 +643,7 @@ def conseil_finition():
 def panneau_chemin(sel):
     """Carte de droite : le chemin de câbles choisi."""
     if len(sel) != 1:
-        md(f"""<div class="panel">{img_html(photo_src("element rectiligne fore"), "visuel", "DKC")}
+        md(f"""<div class="panel">{img_html(photo_src("element rectiligne fore"), "visuel", NOM_MARQUE)}
             <div class="corps attente"><div class="label">{t("chemins_possibles")}</div>
             <div class="gros">{len(sel)}</div><div class="nom">{t("votre_chemin")}</div>
             <div class="muted">{t("faites_choix")}</div></div></div>""")
@@ -634,7 +677,7 @@ def panneau_chemin(sel):
     photos = [f"element rectiligne {variante}"]
     if charn:
         photos.insert(0, f"element rectiligne charnieres {variante}")
-    md(f"""<div class="panel">{img_html(photo_src(photos), "visuel", "DKC")}
+    md(f"""<div class="panel">{img_html(photo_src(photos), "visuel", NOM_MARQUE)}
         <div class="corps">
           <div class="label">{t("votre_chemin")}</div>
           <div class="code">{r['Code']}</div>
@@ -917,12 +960,14 @@ def bloc_liste(num):
     export = [{**lg, "photo": chemin_photo(l["photos"])} for lg, l in zip(lignes, p.values())]
     c1, c2, c3 = st.columns([1, 1, 1])
     with c1:
-        st.download_button(t("telecharger_excel"), data=export_liste.excel(export, t, t("titre_doc"), LOGO, total_general),
-                           file_name="DKC_liste_materiel.xlsx", width="stretch", type="primary",
+        st.download_button(t("telecharger_excel"), data=export_liste.excel(export, t, t("titre_doc"), LOGO, total_general,
+                                                                   MARQUES[MARQUE]["export"]),
+                           file_name=f"{NOM_MARQUE}_liste_materiel.xlsx", width="stretch", type="primary",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     with c2:
-        st.download_button(t("telecharger_pdf"), data=export_liste.pdf(export, t, t("titre_doc"), LOGO, euros(total_general)),
-                           file_name="DKC_liste_materiel.pdf", mime="application/pdf",
+        st.download_button(t("telecharger_pdf"), data=export_liste.pdf(export, t, t("titre_doc"), LOGO, euros(total_general),
+                                                               MARQUES[MARQUE]["export"]),
+                           file_name=f"{NOM_MARQUE}_liste_materiel.pdf", mime="application/pdf",
                            width="stretch", type="primary")
     with c3:
         st.button(t("vider"), on_click=vider, width="stretch")
@@ -982,7 +1027,7 @@ def recherche_directe():
         if st.session_state.get("famille") not in familles:
             st.session_state["famille"] = familles[0]
         etape(1, t("type_produit"))
-        grille([(f, tr(FAMILLES_TR, f), photo_src(FAMILLES[f]), ABREV_FAMILLE.get(f, "DKC"),
+        grille([(f, tr(FAMILLES_TR, f), photo_src(FAMILLES[f]), ABREV_FAMILLE.get(f, NOM_MARQUE),
                  pluriel(s5[s5["Famille"] == f]["Produit"].nunique())) for f in familles],
                "famille", 4, "fam")
         famille = st.session_state["famille"]
@@ -1001,7 +1046,7 @@ def recherche_directe():
         for p in visibles:
             lignes = sel[sel["Produit"] == p]
             ab = abrev_de(lignes)
-            items.append((p, nom(p), photo_src([p, f"famille {famille}"]), ab or ABREV_FAMILLE.get(famille, "DKC"),
+            items.append((p, nom(p), photo_src([p, f"famille {famille}"]), ab or ABREV_FAMILLE.get(famille, NOM_MARQUE),
                           f"{ab} · {len(lignes)} {t('ref_abrege')}" if ab else f"{len(lignes)} {t('ref_abrege')}"))
         if not items:
             st.caption(t("aucun_produit"))
@@ -1025,7 +1070,7 @@ def recherche_directe():
     # ---------- Résultat (colonne de droite, reste visible au défilement) ----------
     with droite, st.container(key="panneau"):
         if len(sel) != 1:
-            md(f"""<div class="panel">{img_html(photo_src([produit, f"famille {famille}"]), "visuel", abrev or "DKC")}
+            md(f"""<div class="panel">{img_html(photo_src([produit, f"famille {famille}"]), "visuel", abrev or NOM_MARQUE)}
                 <div class="corps attente"><div class="label">{t("refs_possibles")}</div>
                 <div class="gros">{len(sel)}</div><div class="nom">{nom(produit)}</div>
                 <div class="muted">{t("precisez")}</div></div></div>""")
@@ -1080,7 +1125,7 @@ def recherche_directe():
         designation = nom(r["Produit"]) + (f" ({r['Abrév']})" if pd.notna(r["Abrév"]) else "")
         chips = "".join(f'<span class="chip">{chip(c, v)}</span>' for c, v in choisis.items() if v is not None)
         rows = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in details)
-        md(f"""<div class="panel">{img_html(photo_src(photos_resultat), "visuel", abrev or "DKC")}
+        md(f"""<div class="panel">{img_html(photo_src(photos_resultat), "visuel", abrev or NOM_MARQUE)}
             <div class="corps">
               <div class="label">{t("reference_dkc")}</div>
               <div class="code">{r['Code']}</div>
@@ -1098,7 +1143,7 @@ logo_b64 = base64.b64encode(LOGO.read_bytes()).decode()
 with st.container(key="entete"):
     c_logo, c_mode, c_liste, c_lang = st.columns([1, 2.7, 1, 1], vertical_alignment="center")
     with c_logo:
-        md(f'<div class="logo-entete"><a href="./" target="_self" title="DKC"><img src="data:image/png;base64,{logo_b64}" alt="DKC"></a></div>')
+        md(f'<div class="logo-entete"><a href="./" target="_self" title="{NOM_MARQUE}"><img src="data:image/png;base64,{logo_b64}" alt="{NOM_MARQUE}"></a></div>')
     with c_mode, st.container(key="modes"):
         mode = st.segmented_control("Mode", ["config", "recherche"], default="config", key="mode",
                                     format_func=lambda m: t("mode_config" if m == "config" else "mode_recherche"),

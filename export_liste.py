@@ -9,7 +9,8 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from PIL import Image
 
-ROUGE = "E30613"
+# Couleurs de la marque : accent (codes, total), fond et texte de l'en-tête du tableau
+THEME_DKC = {"accent": "E30613", "fond": "E30613", "texte": "FFFFFF"}
 COLONNES = ["photo", "code", "designation", "finition", "dimensions", "quantite", "unite", "prix", "total", "page"]
 
 # Polices Unicode disponibles selon le système (accents, «», ×, –)
@@ -33,7 +34,11 @@ def _vignette(chemin, hauteur_px):
     return buf, im.width, im.height
 
 
-def excel(lignes, t, titre, logo, total_general=None):
+def _rgb(hexa):
+    return tuple(int(hexa[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def excel(lignes, t, titre, logo, total_general=None, theme=THEME_DKC):
     """lignes : dicts (photo, code, designation, finition, dimensions, quantite, unite, prix, total, page)."""
     wb = Workbook()
     ws = wb.active
@@ -58,8 +63,8 @@ def excel(lignes, t, titre, logo, total_general=None):
     fin_ligne = Side(style="thin", color="E6E8EC")
     for i, col in enumerate(COLONNES):
         c = ws.cell(row=entete, column=i + 1, value=t(f"col_{col}"))
-        c.font = Font(bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor=ROUGE)
+        c.font = Font(bold=True, color=theme["texte"])
+        c.fill = PatternFill("solid", fgColor=theme["fond"])
         c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     ws.row_dimensions[entete].height = 22
 
@@ -75,7 +80,7 @@ def excel(lignes, t, titre, logo, total_general=None):
             if i in (7, 8):
                 c.number_format = '#,##0.00 "€"'
             c.border = Border(bottom=fin_ligne)
-        ws.cell(row=r, column=2).font = Font(bold=True, color=ROUGE)
+        ws.cell(row=r, column=2).font = Font(bold=True, color=theme["accent"])
         ws.cell(row=r, column=6).font = Font(bold=True)
         ws.cell(row=r, column=9).font = Font(bold=True)
         v = _vignette(lg.get("photo"), 56)
@@ -89,7 +94,7 @@ def excel(lignes, t, titre, logo, total_general=None):
     if total_general is not None:
         ws.cell(row=total, column=8, value=t("total_ht")).font = Font(bold=True)
         c = ws.cell(row=total, column=9, value=total_general)
-        c.font = Font(bold=True, color=ROUGE, size=12)
+        c.font = Font(bold=True, color=theme["accent"], size=12)
         c.number_format = '#,##0.00 "€"'
     ws.cell(row=total + 1, column=3, value=t("mention_doc")).font = Font(size=9, italic=True, color="6B7280")
     ws.cell(row=total + 2, column=3, value=t("prix_note")).font = Font(size=9, italic=True, color="6B7280")
@@ -107,7 +112,7 @@ class _PDF(FPDF):
         self.cell(0, 6, f"{self.page_no()}/{{nb}}", align="R")
 
 
-def pdf(lignes, t, titre, logo, total_general_txt=None):
+def pdf(lignes, t, titre, logo, total_general_txt=None, theme=THEME_DKC):
     doc = _PDF(orientation="P", unit="mm", format="A4")
     doc.mention = t("mention_doc")
     police = None
@@ -143,8 +148,8 @@ def pdf(lignes, t, titre, logo, total_general_txt=None):
     hauteur = 22
 
     def entete():
-        doc.set_fill_color(227, 6, 19)
-        doc.set_text_color(255, 255, 255)
+        doc.set_fill_color(*_rgb(theme["fond"]))
+        doc.set_text_color(*_rgb(theme["texte"]))
         doc.set_font(doc.police, "B", 9)
         for col in larg:
             doc.cell(larg[col], 8, t(f"col_{col}"), fill=True, align="C")
@@ -165,7 +170,7 @@ def pdf(lignes, t, titre, logo, total_general_txt=None):
         x += larg["photo"]
         doc.set_xy(x, y)
         doc.set_font(doc.police, "B", 10)
-        doc.set_text_color(227, 6, 19)
+        doc.set_text_color(*_rgb(theme["accent"]))
         doc.cell(larg["code"], hauteur, lg["code"], align="C")
         x += larg["code"]
         doc.set_xy(x + 1, y + 3)
@@ -200,7 +205,7 @@ def pdf(lignes, t, titre, logo, total_general_txt=None):
         doc.set_font(doc.police, "B", 11)
         doc.set_text_color(28, 31, 36)
         doc.cell(sum(larg.values()) - larg["total"] - larg["page"], 9, t("total_ht"), align="R")
-        doc.set_text_color(227, 6, 19)
+        doc.set_text_color(*_rgb(theme["accent"]))
         doc.cell(larg["total"], 9, total_general_txt, align="R", new_x="LMARGIN", new_y="NEXT")
         doc.set_font(doc.police, size=8)
         doc.set_text_color(107, 114, 128)
