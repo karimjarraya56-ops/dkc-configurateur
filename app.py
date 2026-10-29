@@ -45,6 +45,8 @@ ETAPES = ["Finition", "H_mm", "B_mm", "B1_mm", "Perforé", "Couvercle_charnière
 # Choix du chemin de câbles, dans l'ordre présenté au client
 ETAPES_CHEMIN = ["H_mm", "B_mm", "Perforé", "Finition", "Couvercle_charnières", "Épaisseur", "L_mm"]
 RECT = "Élément rectiligne (chemin de câbles)"
+# Vendus au mètre (quantité en m, prix HT au mètre) ; tous les autres articles à la pièce
+AU_METRE = {RECT, "Couvercle pour élément rectiligne"}
 
 # Finitions de visserie à proposer selon la finition du chemin
 VISSERIE_POUR = {"ZS": ["BZE"], "VB": ["BZE"], "VG": ["BZE"], "ZF": ["BZF", "BZE"], "IX": ["IX"]}
@@ -566,6 +568,25 @@ def unite(u):
     return {"it": {"pcs": "pz"}, "fr": {"pcs": "pcs"}}.get(LANG, {}).get(u, u)
 
 
+def au_metre(ligne):
+    return ligne["Produit"] in AU_METRE
+
+
+def long_element(ligne):
+    """Longueur d'un élément en m (3 m le plus souvent)."""
+    return ligne["L_mm"] / 1000 if pd.notna(ligne["L_mm"]) else 1.0
+
+
+def arrondi_metres(m, long_m):
+    """Métrage arrondi au nombre d'éléments entiers supérieur (10 m → 12 m en éléments de 3 m)."""
+    return math.ceil(round(m / long_m, 6)) * long_m if m > 0 else 0.0
+
+
+def qte_txt(q):
+    """12.0 → 12 ; 2.5 → 2.5 (pour les exports et les champs)."""
+    return int(q) if float(q).is_integer() else q
+
+
 def euros(v):
     """1234.5 → « 1 234,50 € » (FR/IT) ou « €1,234.50 » (EN) ; None → sur demande."""
     if v is None or pd.isna(v):
@@ -708,7 +729,7 @@ def carte_accessoire(produit, g, r):
                 if pd.notna(ligne["Conditionnement"]) else "")
         fin = "" if ligne["Finition"] in (r["Finition"], "Unique") else f" · {ligne['Finition']}"
         md(f'<div class="acc-ref"><b>{ligne["Code"]}</b><span>{cond}{fin}</span></div>'
-           f'<div class="acc-prix">{euros(prix_de(ligne["Code"]))} <small>{t("ht")} / {unite("pcs")}</small></div>{cov_html}')
+           f'<div class="acc-prix">{euros(prix_de(ligne["Code"]))} <small>{t("ht")} / {unite("m" if au_metre(ligne) else "pcs")}</small></div>{cov_html}')
         boutons_ajout(ligne, [produit], couvercle, [f"Couvercle – {produit}", produit])
 
 
@@ -755,7 +776,7 @@ def panneau_chemin(sel):
         if cg is not None and len(cg):
             couvercle = cg.iloc[0]
             details.append((t("couvercle_assorti"), f"<b>{couvercle['Code']}</b>"))
-    details.append((t("prix_unitaire"), f'<span class="prix-fiche">{euros(prix_de(r["Code"]))}</span>'))
+    details.append((t("prix_unitaire"), f'<span class="prix-fiche">{euros(prix_de(r["Code"]))}</span> / m'))
     details.append((t("page_catalogue"), str(int(r["Page_catalogue"]))))
     rows = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in details)
     titre = t("chemin_fore" if fore else "chemin_non_fore") + (t("a_charnieres") if charn else "")
@@ -801,11 +822,11 @@ def calcul_parcours(r, metres, qtes, avec_cov):
     long_m = r["L_mm"] / 1000
     n = math.ceil(round(metres / long_m, 6)) if metres > 0 else 0
     if n:
-        lignes.append((r, photos_chemin(r), n, t("motif_chemin").format(m=nombre(metres), l=nombre(long_m))))
+        lignes.append((r, photos_chemin(r), n * long_m, t("motif_chemin").format(m=nombre(metres), l=nombre(long_m))))
         if avec_cov and r["Couvercle_charnières"] != "Oui":
             cg, _ = compatibles("Couvercle pour élément rectiligne", r)
             if cg is not None and len(cg):
-                lignes.append((cg.iloc[0], ["couvercle pour element rectiligne"], n, t("motif_couvercle")))
+                lignes.append((cg.iloc[0], ["couvercle pour element rectiligne"], n * long_m, t("motif_couvercle")))
     jonctions = 0
     for produit, q in qtes.items():
         if not q:
@@ -863,7 +884,7 @@ def bloc_calcul(r):
                 "photo": photo_src(ph), "code": lg["Code"],
                 "designation": designation({"produit": lg["Produit"], "abrev": lg["Abrév"] if pd.notna(lg["Abrév"]) else "",
                                             "perfore": lg["Perforé"], "charn": lg["Couvercle_charnières"], "ep": lg["Épaisseur"]}),
-                "quantite": q, "prix": euros(prix_de(lg["Code"])),
+                "quantite": f"{nombre(q)} {unite('m' if au_metre(lg) else 'pcs')}", "prix": euros(prix_de(lg["Code"])),
                 "total": euros(prix_de(lg["Code"]) * q) if prix_de(lg["Code"]) is not None else "—",
                 "motif": motif} for lg, ph, q, motif in lignes]),
                 hide_index=True, width="stretch", row_height=56, height=40 + 56 * len(lignes),
@@ -871,7 +892,7 @@ def bloc_calcul(r):
                     "photo": st.column_config.ImageColumn(t("col_photo"), width="small"),
                     "code": st.column_config.TextColumn(t("col_code"), width="small"),
                     "designation": st.column_config.TextColumn(t("col_designation"), width="large"),
-                    "quantite": st.column_config.NumberColumn(t("col_quantite"), width="small"),
+                    "quantite": st.column_config.TextColumn(t("col_quantite"), width="small"),
                     "prix": st.column_config.TextColumn(t("col_prix"), width="small"),
                     "total": st.column_config.TextColumn(t("col_total"), width="small"),
                     "motif": st.column_config.TextColumn(t("col_motif")),
@@ -923,15 +944,20 @@ def panier():
 
 
 def ajouter(ligne, photos, qte=1):
+    """qte : mètres pour un article au mètre (arrondis aux éléments entiers), pièces sinon."""
     p = panier()
     code = ligne["Code"]
+    metre = au_metre(ligne)
+    long_m = long_element(ligne)
+    if metre:
+        qte = arrondi_metres(float(qte), long_m)
     if code in p:
         p[code]["qte"] += qte
         return
     p[code] = {
         "produit": ligne["Produit"], "abrev": ligne["Abrév"] if pd.notna(ligne["Abrév"]) else "",
         "finition": ligne["Finition"], "perfore": ligne["Perforé"], "charn": ligne["Couvercle_charnières"],
-        "ep": ligne["Épaisseur"], "unite": "pcs",
+        "ep": ligne["Épaisseur"], "unite": "m" if metre else "pcs", "long_m": long_m if metre else None,
         "page": int(ligne["Page_catalogue"]) if pd.notna(ligne["Page_catalogue"]) else "",
         "dims": {lab: ligne[col] for col, lab in (("H_mm", "H"), ("B_mm", "B"), ("B1_mm", "B1"), ("L_mm", "L"))
                  if pd.notna(ligne[col])},
@@ -940,7 +966,7 @@ def ajouter(ligne, photos, qte=1):
 
 
 def ajouter_qte(ligne, photos, cle):
-    ajouter(ligne, photos, int(st.session_state.get(cle) or 1))
+    ajouter(ligne, photos, st.session_state.get(cle) or 1)
 
 
 def boutons_ajout(ligne, photos, couvercle, photos_couvercle, chemin=False):
@@ -949,10 +975,16 @@ def boutons_ajout(ligne, photos, couvercle, photos_couvercle, chemin=False):
     cles = (ligne["Code"], couvercle["Code"] if couvercle is not None else "")
     genre = "ch" if chemin else "acc"
     cle_qte = f"qte_{genre}_{cles[0]}"
+    metre = au_metre(ligne)
     with st.container(key=f"ajout_{genre}_{cles[0]}"):
         c_q, c_b = st.columns([1.25, 1.6], gap="small", vertical_alignment="bottom")
         with c_q:
-            st.number_input(t("col_quantite"), min_value=1, max_value=9999, step=1, value=1, key=cle_qte)
+            if metre:  # au mètre, par pas d'un élément (3 m)
+                long_m = long_element(ligne)
+                st.number_input(t("longueur_m"), min_value=long_m, max_value=99999.0, step=long_m, value=long_m,
+                                format="%g", key=cle_qte, help=t("vendu_par").format(l=nombre(long_m)))
+            else:
+                st.number_input(t("col_quantite"), min_value=1, max_value=9999, step=1, value=1, key=cle_qte)
         with c_b:
             st.button(t("ajouter_chemin" if chemin else "ajouter"), key=f"add_{genre}_{cles[0]}",
                       on_click=ajouter_qte, args=(ligne, photos, cle_qte), width="stretch",
@@ -960,9 +992,9 @@ def boutons_ajout(ligne, photos, couvercle, photos_couvercle, chemin=False):
         if couvercle is not None:
             st.button(t("ajouter_couvercle_chemin" if chemin else "ajouter_couvercle"), key=f"addc_{genre}_{cles[1]}",
                       on_click=ajouter_qte, args=(couvercle.to_dict(), photos_couvercle, cle_qte), width="stretch")
-    deja = [panier()[c]["qte"] for c in cles if c in panier()]
+    deja = [f'{nombre(panier()[c]["qte"])} {unite(panier()[c]["unite"])}' for c in cles if c in panier()]
     if deja:
-        md(f'<div class="dans-liste">✓ {" + ".join(map(str, deja))} {t("dans_liste")}</div>')
+        md(f'<div class="dans-liste">✓ {" + ".join(deja)} {t("dans_liste")}</div>')
 
 
 def designation(l):
@@ -982,11 +1014,12 @@ def dimensions(l):
 
 def maj_qte(code, cle):
     """Nouvelle quantité saisie dans la liste (0 = retirer l'article)."""
-    q = int(st.session_state.get(cle) or 0)
+    q = st.session_state.get(cle) or 0
     if q <= 0:
         panier().pop(code, None)
     elif code in panier():
-        panier()[code]["qte"] = q
+        l = panier()[code]
+        l["qte"] = arrondi_metres(float(q), l["long_m"]) if l.get("long_m") else int(q)
 
 
 def retirer(code):
@@ -1001,7 +1034,8 @@ def lignes_liste():
     """Lignes de la liste de matériel (avec prix) et total général HT."""
     lignes = [{"photo": photo_src(l["photos"]), "code": c, "designation": designation(l),
                "finition": fmt("Finition", l["finition"]), "dimensions": dimensions(l),
-               "quantite": l["qte"], "unite": unite(l["unite"]), "page": l["page"]} for c, l in panier().items()]
+               "quantite": qte_txt(l["qte"]), "unite": unite(l["unite"]), "page": l["page"],
+               "long_m": l.get("long_m")} for c, l in panier().items()]
     for lg in lignes:
         pu = prix_de(lg["code"])
         lg["prix"], lg["prix_txt"] = pu, euros(pu)
@@ -1034,16 +1068,24 @@ def bloc_liste(num):
         for lg in lignes:
             code = lg["code"]
             cle = f"liste_q_{code}"
-            st.session_state[cle] = lg["quantite"]  # suit les ajouts faits ailleurs dans la page
+            long_m = lg["long_m"]
+            st.session_state[cle] = float(lg["quantite"]) if long_m else lg["quantite"]  # suit les ajouts faits ailleurs
             with st.container(key=f"lt_ligne_{code}"):
                 c = st.columns(largeurs, gap="small", vertical_alignment="center")
                 c[0].markdown(img_html(lg["photo"], "lt-photo", ""), unsafe_allow_html=True)
                 c[1].markdown(f'<div class="lt-code">{code}</div>', unsafe_allow_html=True)
+                n_el = round(lg["quantite"] / long_m) if long_m else 0
+                elements = (f' · {t("nb_elements_1" if n_el == 1 else "nb_elements").format(n=n_el, l=nombre(long_m))}'
+                            if long_m else "")
                 c[2].markdown(f'<div class="lt-nom">{lg["designation"]}</div>'
-                              f'<div class="lt-det">{lg["finition"]} · {lg["dimensions"]}</div>', unsafe_allow_html=True)
+                              f'<div class="lt-det">{lg["finition"]} · {lg["dimensions"]}{elements}</div>', unsafe_allow_html=True)
                 with c[3]:
-                    st.number_input(t("col_quantite"), min_value=0, max_value=99999, step=1, key=cle,
-                                    label_visibility="collapsed", on_change=maj_qte, args=(code, cle))
+                    if long_m:
+                        st.number_input(t("longueur_m"), min_value=0.0, max_value=99999.0, step=long_m, format="%g",
+                                        key=cle, label_visibility="collapsed", on_change=maj_qte, args=(code, cle))
+                    else:
+                        st.number_input(t("col_quantite"), min_value=0, max_value=99999, step=1, key=cle,
+                                        label_visibility="collapsed", on_change=maj_qte, args=(code, cle))
                 c[4].markdown(f'<div class="lt-prix">{lg["prix_txt"]}<small> / {lg["unite"]}</small></div>',
                               unsafe_allow_html=True)
                 c[5].markdown(f'<div class="lt-total">{lg["total_txt"]}</div>', unsafe_allow_html=True)
