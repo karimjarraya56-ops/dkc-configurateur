@@ -4,7 +4,10 @@ primaryColor = "#1A1A1A"
 backgroundColor = "#F5F6F8"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#1C1F24"
-font = "sans serif"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap, sans-serif"
+showWidgetBorder = true
+borderColor = "#DCDFE4"
+baseRadius = "0.6rem"
 
 [client]
 toolbarMode = "minimal"

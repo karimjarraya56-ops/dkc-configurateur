@@ -7,6 +7,7 @@ import math
 import re
 import smtplib
 import unicodedata
+from datetime import date
 from email.message import EmailMessage
 from urllib.parse import quote
 from pathlib import Path
@@ -25,9 +26,9 @@ import export_liste
 # Marque affichée : "dkc" par défaut, "sati" quand l'app est lancée par sati/app.py
 MARQUE = globals().get("MARQUE", "dkc")
 MARQUES = {
-    "dkc": {"nom": "DKC", "logo": "dkc_logo.png", "email": None,
+    "dkc": {"nom": "DKC", "societe": "DKC", "logo": "dkc_logo.png", "email": None,
             "export": {"accent": "E30613", "fond": "E30613", "texte": "FFFFFF"}},
-    "sati": {"nom": "SATI", "logo": "sati_logo.png", "email": "contact@satitunisia.com",
+    "sati": {"nom": "SATI", "societe": "SATI Tunisia", "logo": "sati_logo.png", "email": "c.jarraya@satitunisia.com",
              "export": {"accent": "1A1A1A", "fond": "FFE100", "texte": "1A1A1A"}},
 }
 NOM_MARQUE = MARQUES[MARQUE]["nom"]
@@ -69,7 +70,7 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     :root {--dkc: #E30613; --dkc-dark: #9E0410; --dkc-soft: #FDECEE; --ink: #14171C; --muted: #6B7280;
-           --line: #E6E8EC; --bg: #F4F5F7;}
+           --line: #E6E8EC; --bg: #F4F5F7; --accent: #E30613; --on-accent: #fff; --accent-line: #E30613;}
     html, body, .stApp, p, label, input, textarea, button, h1, h2, h3, td, th, li {font-family: 'Inter', sans-serif;}
     .stApp {background: var(--bg);}
     #MainMenu, footer, header[data-testid="stHeader"], [data-testid="stToolbar"],
@@ -338,9 +339,65 @@ st.markdown(
     .contact-mail:hover {background: var(--dkc);}
     .st-key-form_contact {background: #fff; border: 1px solid var(--line); border-top: none; border-radius: 0 0 16px 16px;
       padding: 0.6rem 1.4rem 1.2rem;}
+
+    /* ===== Finitions ===== */
+    html {scroll-behavior: smooth;}
+    /* Champs de saisie : fond gris clair pour qu'ils se voient sur les cartes blanches */
+    [data-testid="stTextInput"] [data-baseweb="input"], [data-testid="stTextArea"] [data-baseweb="textarea"],
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div, [data-testid="stNumberInputContainer"] {
+      background: #F8F9FB !important; transition: border-color .15s, box-shadow .15s;}
+    [data-testid="stTextInput"] [data-baseweb="input"] *, [data-testid="stTextArea"] textarea,
+    [data-testid="stNumberInputContainer"] * {background: transparent !important;}
+    [data-testid="stTextInput"] [data-baseweb="input"]:focus-within, [data-testid="stTextArea"] [data-baseweb="textarea"]:focus-within,
+    [data-testid="stNumberInputContainer"]:focus-within {border-color: var(--accent-line) !important;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-line) 18%, transparent);}
+    [data-testid="stWidgetLabel"] p {font-weight: 600; font-size: 0.84rem; color: var(--ink);}
+    /* Pastilles d'options : la sélection est pleine, bien visible */
+    [data-testid="stButtonGroup"] button {transition: border-color .15s, background .15s, color .15s;}
+    [data-testid="stButtonGroup"] button:hover {border-color: var(--ink) !important;}
+    .stApp [data-testid="stButtonGroup"]:not(.st-key-modes *, .st-key-langue *) button[aria-checked="true"] {
+      background: var(--accent) !important; border-color: var(--accent) !important; color: var(--on-accent) !important;
+      font-weight: 600; box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent) !important;}
+    .stApp [data-testid="stButtonGroup"]:not(.st-key-modes *, .st-key-langue *) button[aria-checked="true"] * {
+      color: var(--on-accent) !important;}
+    /* Drapeaux : celui choisi est net, les autres atténués */
+    .st-key-langue button {background: transparent !important; border-color: transparent !important; box-shadow: none !important;
+      opacity: .5; transition: opacity .15s;}
+    .st-key-langue button:hover {opacity: .85;}
+    .st-key-langue button[aria-checked="true"] {opacity: 1; background: var(--bg) !important;}
+    /* Boutons */
+    .stButton button, .stDownloadButton button, [data-testid="stFormSubmitButton"] button {font-weight: 600;
+      border-radius: 10px; transition: transform .12s, box-shadow .15s, background .15s, border-color .15s;}
+    [data-testid="stBaseButton-secondary"]:hover {border-color: var(--ink) !important; color: var(--ink) !important;}
+    [data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primaryFormSubmit"] {
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 28%, transparent);}
+    [data-testid="stBaseButton-primary"]:hover, [data-testid="stBaseButton-primaryFormSubmit"]:hover {transform: translateY(-1px);}
+    [data-testid="stFormSubmitButton"] button {padding: 0.55rem 1.6rem;}
+    /* Volets dépliables et onglets */
+    [data-testid="stExpander"] details {background: #fff; border-radius: 12px; border-color: var(--line);}
+    [data-testid="stExpander"] summary p {font-weight: 600;}
+    .stTabs [data-baseweb="tab-highlight"] {background: var(--accent-line); height: 3px;}
+    .stTabs [aria-selected="true"] p {font-weight: 700;}
+    /* Cartes : légère ombre au repos */
+    [class*="st-key-card_"], [class*="st-key-acc_"], .stepper, .st-key-carte_chemin, .st-key-calcul, .st-key-liste_table {
+      box-shadow: 0 1px 2px rgba(20,23,28,.04), 0 4px 14px rgba(20,23,28,.04);}
+    /* Bandeau d'accueil : motif discret à droite */
+    .hero > div {position: relative; z-index: 1;}
+    .hero::before {content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 42%;
+      background: radial-gradient(ellipse at 100% 50%, rgba(255,255,255,.10), transparent 70%); pointer-events: none;}
+    /* Pied de page */
+    .pied {display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      margin-top: 2.4rem; padding: 1.2rem 0.2rem 0.4rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem;}
+    .pied img {height: 22px; display: block; opacity: .9;}
+    .pied .g {display: flex; align-items: center; gap: 0.9rem;}
+    .pied a {color: var(--muted) !important; text-decoration: none !important; font-weight: 600;}
+    .pied a:hover {color: var(--ink) !important;}
     @media (max-width: 640px) {
-      .lien-contact {font-size: 0.78rem;}
-      .liens-entete {gap: 0.6rem;}
+      .lien-contact {font-size: 1.05rem;}
+      .lien-contact span {display: none;}
+      .liens-entete {gap: 0.5rem;}
+      .st-key-langue button::before {width: 22px; height: 15px;}
+      .st-key-langue button {padding: 0.25rem 0.3rem !important;}
     }
     </style>
     """,
@@ -438,9 +495,12 @@ def prix_de(code):
 # Habillage SATI : jaune et noir du logo
 CSS_SATI = """
     <style>
-    :root {--dkc: #1A1A1A; --dkc-dark: #000; --dkc-soft: #FFF9D6; --jaune: #FFE100; --jaune-dark: #F2CF00;}
+    :root {--dkc: #1A1A1A; --dkc-dark: #000; --dkc-soft: #FFF9D6; --jaune: #FFE100; --jaune-dark: #F2CF00;
+           --accent: #FFE100; --on-accent: #141414; --accent-line: #E5C400;}
     .hero {background: #141414; border-left: 8px solid var(--jaune);}
     .hero::after {border-color: rgba(255,225,0,.10);}
+    .hero::before {background: repeating-linear-gradient(-45deg, rgba(255,225,0,.07) 0 14px, transparent 14px 28px);
+      width: 28%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 60%); mask-image: linear-gradient(90deg, transparent, #000 60%);}
     .hero-tag {color: var(--jaune); opacity: 1;}
     .stat {background: rgba(255,225,0,.08); border-color: rgba(255,225,0,.35);}
     .stat b {color: var(--jaune);}
@@ -457,10 +517,11 @@ CSS_SATI = """
     [class*="st-key-card_"][class*="_sel"] {border-color: var(--jaune-dark); box-shadow: 0 0 0 3px rgba(255,225,0,.45);}
     [class*="st-key-acc_"]:hover {border-color: var(--jaune-dark);}
     .st-key-carte_chemin [data-testid="stButtonGroup"] button[aria-checked="true"] {box-shadow: 0 0 0 2px rgba(255,225,0,.6);}
-    [data-testid="stBaseButton-primary"] {background: var(--jaune) !important; border-color: var(--jaune) !important;
-      color: #141414 !important; font-weight: 700;}
-    [data-testid="stBaseButton-primary"]:hover {background: var(--jaune-dark) !important; border-color: var(--jaune-dark) !important;}
-    [data-testid="stBaseButton-primary"] * {color: #141414 !important;}
+    [data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primaryFormSubmit"] {background: var(--jaune) !important;
+      border-color: var(--jaune) !important; color: #141414 !important; font-weight: 700;}
+    [data-testid="stBaseButton-primary"]:hover, [data-testid="stBaseButton-primaryFormSubmit"]:hover {
+      background: var(--jaune-dark) !important; border-color: var(--jaune-dark) !important;}
+    [data-testid="stBaseButton-primary"] *, [data-testid="stBaseButton-primaryFormSubmit"] * {color: #141414 !important;}
     </style>
 """
 if MARQUE == "sati":
@@ -1057,11 +1118,14 @@ def bloc_contact():
           <a class="contact-mail" href="mailto:{EMAIL_CONTACT}">✉ {EMAIL_CONTACT}</a></div>""")
     p = panier()
     with st.container(key="form_contact"), st.form("demande", border=False):
+        # Une rangée par paire de champs : l'ordre reste logique quand les colonnes s'empilent sur mobile
         c1, c2 = st.columns(2)
         nom_c = c1.text_input(t("ct_nom") + " *")
-        societe = c2.text_input(t("ct_societe"))
-        email = c1.text_input(t("ct_email") + " *")
+        email = c2.text_input(t("ct_email") + " *")
+        c1, c2 = st.columns(2)
+        societe = c1.text_input(t("ct_societe"))
         tel = c2.text_input(t("ct_tel"))
+        c1, c2 = st.columns(2)
         ville = c1.text_input(t("ct_ville"))
         sujet = c2.selectbox(t("ct_sujet"), [t("ct_sujet_prix"), t("ct_sujet_tech"), t("ct_sujet_autre")])
         message = st.text_area(t("ct_message") + " *", height=130)
@@ -1273,7 +1337,7 @@ with st.container(key="entete"):
                                     label_visibility="collapsed")
     with c_liste:
         nb = len(panier())
-        contact = f'<a class="lien-contact" href="#contact">✉ {t("ct_lien")}</a>' if EMAIL_CONTACT else ""
+        contact = f'<a class="lien-contact" href="#contact">✉ <span>{t("ct_lien")}</span></a>' if EMAIL_CONTACT else ""
         md(f'<div class="liens-entete">{contact}<a class="badge-liste{" plein" if nb else ""}" href="#ma-liste">'
            f'🧾 {t("ma_liste_court")} <span>{nb}</span></a></div>')
     with c_lang, st.container(key="langue"):
@@ -1296,3 +1360,9 @@ else:
 
 if EMAIL_CONTACT:
     bloc_contact()
+
+mail_pied = f'<a href="mailto:{EMAIL_CONTACT}">{EMAIL_CONTACT}</a>' if EMAIL_CONTACT else ""
+md(f"""<div class="pied">
+      <div class="g"><img src="data:image/png;base64,{logo_b64}" alt="{NOM_MARQUE}"><span>{t("titre")} · S5</span></div>
+      <div class="g">{mail_pied}<span>© {date.today().year} {MARQUES[MARQUE]["societe"]}</span></div>
+    </div>""")
