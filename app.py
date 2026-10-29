@@ -28,7 +28,7 @@ MARQUE = globals().get("MARQUE", "dkc")
 MARQUES = {
     "dkc": {"nom": "DKC", "societe": "DKC", "logo": "dkc_logo.png", "email": None,
             "export": {"accent": "E30613", "fond": "E30613", "texte": "FFFFFF"}},
-    "sati": {"nom": "SATI", "societe": "SATI Tunisia", "logo": "sati_logo.png", "email": "c.jarraya@satitunisia.com",
+    "sati": {"nom": "SATI", "societe": "SATI Tunisia", "logo": "sati_logo.png", "email": "commercial@satitunisia.com",
              "export": {"accent": "1A1A1A", "fond": "FFE100", "texte": "1A1A1A"}},
 }
 NOM_MARQUE = MARQUES[MARQUE]["nom"]
