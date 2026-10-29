@@ -5,7 +5,10 @@ Lancer :  streamlit run app.py        (version DKC)
 import base64
 import math
 import re
+import smtplib
 import unicodedata
+from email.message import EmailMessage
+from urllib.parse import quote
 from pathlib import Path
 
 import pandas as pd
@@ -22,12 +25,13 @@ import export_liste
 # Marque affichée : "dkc" par défaut, "sati" quand l'app est lancée par sati/app.py
 MARQUE = globals().get("MARQUE", "dkc")
 MARQUES = {
-    "dkc": {"nom": "DKC", "logo": "dkc_logo.png",
+    "dkc": {"nom": "DKC", "logo": "dkc_logo.png", "email": None,
             "export": {"accent": "E30613", "fond": "E30613", "texte": "FFFFFF"}},
-    "sati": {"nom": "SATI", "logo": "sati_logo.png",
+    "sati": {"nom": "SATI", "logo": "sati_logo.png", "email": "contact@satitunisia.com",
              "export": {"accent": "1A1A1A", "fond": "FFE100", "texte": "1A1A1A"}},
 }
 NOM_MARQUE = MARQUES[MARQUE]["nom"]
+EMAIL_CONTACT = MARQUES[MARQUE]["email"]  # None : pas de section contact
 
 DATA = Path(__file__).parent / "DKC_S5_base_produits.xlsx"
 LOGO = Path(__file__).parent / "assets" / MARQUES[MARQUE]["logo"]
@@ -317,6 +321,27 @@ st.markdown(
     .vendu {display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--dkc); background: #FFF1F2;
       border: 1px solid #FECDD3; border-radius: 999px; padding: 0.15rem 0.6rem; margin-bottom: 0.4rem;}
     .titre-extra {font-weight: 700; font-size: 0.85rem; margin-top: 1.1rem; color: var(--ink);}
+
+    /* Contact */
+    .liens-entete {display: flex; align-items: center; justify-content: flex-end; gap: 0.9rem;}
+    .lien-contact {font-weight: 600; font-size: 0.85rem; color: var(--ink) !important; text-decoration: none !important;
+      white-space: nowrap;}
+    .lien-contact:hover {color: var(--dkc) !important;}
+    #contact {scroll-margin-top: 90px;}
+    .contact-tete {display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      background: #fff; border: 1px solid var(--line); border-radius: 16px 16px 0 0; border-bottom: none;
+      padding: 1.2rem 1.4rem 0.4rem; margin-top: 2.4rem;}
+    .contact-tete h2 {font-size: 1.3rem; font-weight: 800; color: var(--ink); margin: 0; padding: 0;}
+    .contact-tete p {margin: 0.2rem 0 0; color: var(--muted); font-size: 0.9rem;}
+    .contact-mail {display: inline-block; background: var(--ink); color: #fff !important; border-radius: 999px;
+      padding: 0.5rem 1rem; font-weight: 700; font-size: 0.88rem; text-decoration: none !important;}
+    .contact-mail:hover {background: var(--dkc);}
+    .st-key-form_contact {background: #fff; border: 1px solid var(--line); border-top: none; border-radius: 0 0 16px 16px;
+      padding: 0.6rem 1.4rem 1.2rem;}
+    @media (max-width: 640px) {
+      .lien-contact {font-size: 0.78rem;}
+      .liens-entete {gap: 0.6rem;}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -911,6 +936,23 @@ def vider():
     st.session_state["panier"] = {}
 
 
+def lignes_liste():
+    """Lignes de la liste de matériel (avec prix) et total général HT."""
+    lignes = [{"photo": photo_src(l["photos"]), "code": c, "designation": designation(l),
+               "finition": fmt("Finition", l["finition"]), "dimensions": dimensions(l),
+               "quantite": l["qte"], "unite": unite(l["unite"]), "page": l["page"]} for c, l in panier().items()]
+    for lg in lignes:
+        pu = prix_de(lg["code"])
+        lg["prix"], lg["prix_txt"] = pu, euros(pu)
+        lg["total"] = pu * lg["quantite"] if pu is not None else None
+        lg["total_txt"] = euros(lg["total"]) if pu is not None else "—"
+    return lignes, sum(lg["total"] or 0 for lg in lignes)
+
+
+def excel_liste(export, total_general):
+    return export_liste.excel(export, t, t("titre_doc"), LOGO, total_general, MARQUES[MARQUE]["export"])
+
+
 def bloc_liste(num):
     p = panier()
     n = len(p)
@@ -919,16 +961,8 @@ def bloc_liste(num):
     if not p:
         md(f'<div class="seule">{t("liste_vide")}</div>')
         return
-    lignes = [{"photo": photo_src(l["photos"]), "code": c, "designation": designation(l),
-               "finition": fmt("Finition", l["finition"]), "dimensions": dimensions(l),
-               "quantite": l["qte"], "unite": unite(l["unite"]), "page": l["page"]} for c, l in p.items()]
+    lignes, total_general = lignes_liste()
     st.caption(t("info_liste"))
-    for lg in lignes:
-        pu = prix_de(lg["code"])
-        lg["prix"], lg["prix_txt"] = pu, euros(pu)
-        lg["total"] = pu * lg["quantite"] if pu is not None else None
-        lg["total_txt"] = euros(lg["total"]) if pu is not None else "—"
-    total_general = sum(lg["total"] or 0 for lg in lignes)
     largeurs = [0.85, 0.95, 2.9, 1.45, 0.95, 1, 0.45, 0.4]
     with st.container(key="liste_table"):
         entete = st.columns(largeurs, gap="small")
@@ -960,8 +994,7 @@ def bloc_liste(num):
     export = [{**lg, "photo": chemin_photo(l["photos"])} for lg, l in zip(lignes, p.values())]
     c1, c2, c3 = st.columns([1, 1, 1])
     with c1:
-        st.download_button(t("telecharger_excel"), data=export_liste.excel(export, t, t("titre_doc"), LOGO, total_general,
-                                                                   MARQUES[MARQUE]["export"]),
+        st.download_button(t("telecharger_excel"), data=excel_liste(export, total_general),
                            file_name=f"{NOM_MARQUE}_liste_materiel.xlsx", width="stretch", type="primary",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     with c2:
@@ -971,6 +1004,96 @@ def bloc_liste(num):
                            width="stretch", type="primary")
     with c3:
         st.button(t("vider"), on_click=vider, width="stretch")
+
+
+# ---------- Contact et demande client ----------
+EMAIL_OK = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def texte_demande(d, lignes, total_general):
+    """Corps de l'email de demande (texte brut)."""
+    txt = [f"{t('ct_nom')} : {d['nom']}", f"{t('ct_societe')} : {d['societe'] or '—'}",
+           f"{t('ct_email')} : {d['email']}", f"{t('ct_tel')} : {d['tel'] or '—'}",
+           f"{t('ct_ville')} : {d['ville'] or '—'}", f"{t('ct_sujet')} : {d['sujet']}", "", d["message"]]
+    if lignes:
+        txt += ["", f"— {t('ma_liste')} —"]
+        txt += [f"{lg['code']}  ·  {lg['quantite']} {lg['unite']}  ·  {lg['designation']} ({lg['finition']}, {lg['dimensions']})"
+                for lg in lignes]
+        txt.append(f"{t('total_ht')} : {euros(total_general)}")
+    return "\n".join(txt)
+
+
+def objet_demande(d):
+    return f"[{NOM_MARQUE}] {d['sujet']} – {d['nom']}" + (f" ({d['societe']})" if d["societe"] else "")
+
+
+def envoyer_demande(d, corps, piece):
+    """Envoie la demande par SMTP si les secrets Streamlit contiennent [smtp]. Renvoie True si envoyé."""
+    try:
+        conf = st.secrets.get("smtp")
+    except Exception:  # pas de fichier secrets.toml
+        conf = None
+    if not conf:
+        return False
+    msg = EmailMessage()
+    msg["Subject"] = objet_demande(d)
+    msg["From"] = conf.get("expediteur", conf["user"])
+    msg["To"] = conf.get("destinataire", EMAIL_CONTACT)
+    msg["Reply-To"] = d["email"]
+    msg.set_content(corps)
+    if piece:
+        msg.add_attachment(piece, maintype="application", subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                           filename=f"{NOM_MARQUE}_liste_materiel.xlsx")
+    with smtplib.SMTP(conf["host"], int(conf.get("port", 587)), timeout=20) as serveur:
+        serveur.starttls()
+        serveur.login(conf["user"], conf["password"])
+        serveur.send_message(msg)
+    return True
+
+
+def bloc_contact():
+    md('<div id="contact"></div>')
+    md(f"""<div class="contact-tete"><div><h2>{t("ct_titre")}</h2><p>{t("ct_intro")}</p></div>
+          <a class="contact-mail" href="mailto:{EMAIL_CONTACT}">✉ {EMAIL_CONTACT}</a></div>""")
+    p = panier()
+    with st.container(key="form_contact"), st.form("demande", border=False):
+        c1, c2 = st.columns(2)
+        nom_c = c1.text_input(t("ct_nom") + " *")
+        societe = c2.text_input(t("ct_societe"))
+        email = c1.text_input(t("ct_email") + " *")
+        tel = c2.text_input(t("ct_tel"))
+        ville = c1.text_input(t("ct_ville"))
+        sujet = c2.selectbox(t("ct_sujet"), [t("ct_sujet_prix"), t("ct_sujet_tech"), t("ct_sujet_autre")])
+        message = st.text_area(t("ct_message") + " *", height=130)
+        joindre = st.checkbox(t("ct_joindre").format(n=len(p)), value=bool(p), disabled=not p)
+        envoye = st.form_submit_button(t("ct_envoyer"), type="primary")
+    if not envoye:
+        return
+    manque = [lib for lib, v in ((t("ct_nom"), nom_c), (t("ct_email"), email), (t("ct_message"), message)) if not v.strip()]
+    if manque:
+        st.error(t("ct_manque") + " " + ", ".join(manque))
+        return
+    if not EMAIL_OK.match(email.strip()):
+        st.error(t("ct_email_invalide"))
+        return
+    d = {"nom": nom_c.strip(), "societe": societe.strip(), "email": email.strip(), "tel": tel.strip(),
+         "ville": ville.strip(), "sujet": sujet, "message": message.strip()}
+    lignes, total_general = lignes_liste() if joindre and p else ([], 0)
+    corps = texte_demande(d, lignes, total_general)
+    piece = None
+    if lignes:
+        export = [{**lg, "photo": chemin_photo(l["photos"])} for lg, l in zip(lignes, p.values())]
+        piece = excel_liste(export, total_general)
+    try:
+        if envoyer_demande(d, corps, piece):
+            st.success(t("ct_merci"))
+            return
+    except Exception:
+        st.warning(t("ct_erreur_envoi"))
+    # Pas d'envoi automatique : la demande s'ouvre, déjà remplie, dans la messagerie du client
+    lien = f"mailto:{EMAIL_CONTACT}?subject={quote(objet_demande(d))}&body={quote(corps)}"
+    st.info(t("ct_via_mail"))
+    md(f'<a class="contact-mail" href="{lien}">✉ {t("ct_ouvrir_mail")}</a>')
 
 
 def stepper(barre, chemin_ok):
@@ -1150,7 +1273,9 @@ with st.container(key="entete"):
                                     label_visibility="collapsed")
     with c_liste:
         nb = len(panier())
-        md(f'<a class="badge-liste{" plein" if nb else ""}" href="#ma-liste">🧾 {t("ma_liste_court")} <span>{nb}</span></a>')
+        contact = f'<a class="lien-contact" href="#contact">✉ {t("ct_lien")}</a>' if EMAIL_CONTACT else ""
+        md(f'<div class="liens-entete">{contact}<a class="badge-liste{" plein" if nb else ""}" href="#ma-liste">'
+           f'🧾 {t("ma_liste_court")} <span>{nb}</span></a></div>')
     with c_lang, st.container(key="langue"):
         st.segmented_control("Langue", list(LANGUES), default="fr", key="lang", format_func=LANGUES.get,
                              label_visibility="collapsed")
@@ -1168,3 +1293,6 @@ if mode == "recherche":
     recherche_directe()
 else:
     configurateur()
+
+if EMAIL_CONTACT:
+    bloc_contact()
